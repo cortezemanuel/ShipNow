@@ -1,6 +1,6 @@
 # ShipNow API
 
-API REST desarrollada con Node.js, Express y MongoDB para la gestión de productos y usuarios de ShipNow.
+API REST desarrollada con Node.js, Express y MongoDB para la gestión de productos, usuarios, pedidos y entregas de ShipNow.
 
 ## Tecnologías utilizadas
 
@@ -12,6 +12,7 @@ API REST desarrollada con Node.js, Express y MongoDB para la gestión de product
 - Dotenv
 - CORS
 - Bcrypt
+- Faker.js
 - Nodemon
 
 ## Arquitectura
@@ -25,6 +26,7 @@ El proyecto utiliza una arquitectura en capas para separar responsabilidades y f
 - **Models:** define los esquemas y modelos de datos.
 - **Config:** contiene la configuración del entorno y la conexión a la base de datos.
 - **Constants:** centraliza los valores constantes del dominio.
+- **Mocks:** contiene los generadores de datos simulados mediante Faker.
 
 El flujo de trabajo es:
 
@@ -98,6 +100,68 @@ npm start
 | POST   | `/api/users`     | Registra un usuario       |
 | PUT    | `/api/users/:id` | Actualiza un usuario      |
 | DELETE | `/api/users/:id` | Elimina un usuario        |
+
+### Mocks
+
+El módulo de mocking permite generar datos ficticios mediante Faker.js, respetando la estructura de los modelos reales y las constantes definidas en el proyecto.
+
+Cuenta con dos endpoints:
+
+| Método | Endpoint                 | Descripción                                                        |
+| ------ | ------------------------ | ------------------------------------------------------------------ |
+| GET    | `/api/mocks/users?qty=5` | Genera usuarios simulados sin guardarlos en MongoDB                |
+| POST   | `/api/mocks/seed?qty=10` | Genera e inserta usuarios, pedidos y entregas de prueba en MongoDB |
+
+#### Generación de usuarios
+
+Para obtener usuarios simulados sin persistirlos en la base de datos:
+
+```http
+GET http://localhost:3000/api/mocks/users?qty=5
+```
+
+El parámetro `qty` indica la cantidad de usuarios a generar. Si no se especifica, se utiliza el valor predeterminado.
+
+Los usuarios generados incluyen nombre, apellido, email, contraseña de prueba y rol.
+
+#### Carga de datos de prueba
+
+Para insertar datos simulados en MongoDB:
+
+```http
+POST http://localhost:3000/api/mocks/seed?qty=10
+```
+
+El proceso genera:
+
+- Usuarios con roles de cliente y repartidor.
+- Pedidos asociados a los clientes generados.
+- Entregas vinculadas a los pedidos.
+- Repartidores asignados a las entregas.
+
+Las contraseñas de los usuarios insertados se almacenan utilizando hashing con Bcrypt.
+
+La operación utiliza una transacción de MongoDB para mantener la consistencia de los datos. Si ocurre un error durante el proceso, los cambios de la transacción se revierten.
+
+El parámetro `qty` permite indicar la cantidad de usuarios a generar. Se admiten cantidades entre 2 y 50.
+
+La respuesta informa la cantidad de usuarios, pedidos y entregas insertados.
+
+Ejemplo de respuesta:
+
+```json
+{
+  "status": "success",
+  "message": "Datos de prueba generados correctamente",
+  "payload": {
+    "users": 10,
+    "orders": 5,
+    "deliveries": 5
+  }
+}
+```
+
+**Importante:** el endpoint de seed inserta registros nuevos en MongoDB. No elimina los datos existentes.
 
 ## Configuración y seguridad
 

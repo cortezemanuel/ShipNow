@@ -28,8 +28,8 @@ class UserRepository {
     return User.findByIdAndDelete(id).select("-password");
   }
 
-  async insertMany(users) {
-    return User.insertMany(users);
+  async insertMany(users, session = null) {
+    return User.insertMany(users, session ? { session } : {});
   }
 }
 

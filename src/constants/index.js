@@ -38,3 +38,9 @@ export const DOCUMENT_TYPES = Object.freeze({
   DRIVER_LICENSE: "driver_license",
   DELIVERY_PROOF: "delivery_proof",
 });
+
+export const MOCKING_PARAMETERS = Object.freeze({
+  MAX: 50,
+  DEFAULT: 10,
+  DEFAULT_PASSWORD: "coder123",
+});
