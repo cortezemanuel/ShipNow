@@ -14,6 +14,8 @@ El proyecto está desarrollado utilizando una arquitectura por capas, separando 
 - **Dotenv:** gestión de variables de entorno.
 - **Faker:** generación de datos ficticios para pruebas.
 - **Nodemon:** reinicio automático del servidor durante el desarrollo.
+- **Supertest:** pruebas automatizadas de endpoints HTTP.
+- **Node.js Test Runner:** ejecución de pruebas automatizadas.
 
 ## Arquitectura del proyecto
 
@@ -21,13 +23,15 @@ El proyecto utiliza una arquitectura por capas, separando las responsabilidades 
 
 - **Config:** configuración de la aplicación y conexión a la base de datos.
 - **Constants:** constantes utilizadas en los distintos módulos.
-- **Controllers:** reciben las solicitudes HTTP y gestionan las respuestas.
+- **Controllers:** reciben las solicitudes HTTP y gestionan las respuestas exitosas.
+- **Middlewares:** procesan solicitudes y centralizan el manejo de errores.
 - **Models:** definen los esquemas y estructuras de los documentos.
 - **Repositories:** centralizan las operaciones de acceso a la base de datos.
-- **Services:** contienen la lógica de negocio.
+- **Services:** contienen la lógica de negocio y detectan errores.
 - **Routes:** definen los endpoints de la API.
 - **Mocks:** contienen los generadores de datos ficticios.
-- **Utils:** funciones y utilidades compartidas.
+- **Utils:** funciones, clases y utilidades compartidas.
+- **Tests:** contienen las pruebas automatizadas.
 
 ### Estructura de carpetas
 
@@ -41,11 +45,12 @@ src/
 ├── constants/
 │   └── index.js
 ├── controllers/
-│   ├── delivery.controller.js
+│   ├── mocks.controller.js
 │   ├── order.controller.js
 │   ├── products.controller.js
-│   ├── user.controller.js
-│   └── mocks.controller.js
+│   └── user.controller.js
+├── middlewares/
+│   └── errorHandler.js
 ├── models/
 │   ├── delivery.model.js
 │   ├── order.model.js
@@ -62,18 +67,24 @@ src/
 │   └── user.repository.js
 ├── routes/
 │   ├── deliveries.js
+│   ├── mocks.router.js
 │   ├── orders.js
 │   ├── products.router.js
-│   ├── users.js
-│   └── mocks.router.js
+│   └── users.js
 ├── services/
 │   ├── delivery.service.js
+│   ├── mocks.service.js
 │   ├── order.service.js
 │   ├── products.service.js
-│   ├── user.service.js
-│   └── mocks.service.js
+│   └── user.service.js
 └── utils/
+    ├── errorDictionary.js
     └── errors.js
+
+tests/
+├── health.test.js
+├── mocks.test.js
+└── seed.test.js
 ```
 
 ## Instalación y configuración
@@ -191,7 +202,7 @@ Si no se especifica `qty`, se utiliza el valor predeterminado de 10 registros.
 
 La cantidad debe ser un número entero positivo y no puede superar el máximo de 50 registros.
 
-Los valores inválidos, como texto, números negativos, cero o decimales, generan una respuesta HTTP 400.
+Los valores inválidos, como texto, números negativos, cero, decimales o cantidades superiores al máximo permitido, generan una respuesta HTTP 400.
 
 ## Generación de datos de prueba (Mocking)
 
@@ -310,6 +321,215 @@ Las inserciones y actualizaciones se ejecutan dentro de una misma transacción. 
 
 MongoDB Atlas cumple este requisito. Una instancia local de MongoDB ejecutada como standalone (sin replica set) no admite transacciones y no podrá ejecutar este endpoint hasta configurarse adecuadamente.
 
+## Manejo profesional y centralizado de errores
+
+El proyecto implementa un sistema centralizado de manejo de errores para mantener respuestas HTTP uniformes y separar la lógica de negocio de la presentación de los errores.
+
+El sistema está compuesto por tres elementos principales:
+
+### 1. Errores personalizados (AppError)
+
+La clase `AppError`, ubicada en `src/utils/errors.js`, permite generar errores personalizados mediante códigos identificadores.
+
+Los servicios detectan las situaciones excepcionales y lanzan el error correspondiente utilizando su código.
+
+Ejemplo:
+
+```javascript
+throw new AppError("USER_NOT_FOUND");
+```
+
+De esta manera, los servicios identifican el error sin construir directamente una respuesta HTTP.
+
+### 2. Diccionario de errores
+
+El archivo `src/utils/errorDictionary.js` contiene las definiciones centralizadas de los errores.
+
+Cada código tiene asociado:
+
+- Un código HTTP.
+- Un mensaje descriptivo.
+
+Ejemplo:
+
+```javascript
+USER_NOT_FOUND: {
+  statusCode: 404,
+  message: "Usuario no encontrado",
+},
+```
+
+El diccionario permite mantener consistencia en los mensajes y códigos utilizados por toda la aplicación.
+
+Entre los errores contemplados se encuentran:
+
+| Código                     | HTTP | Descripción                           |
+| -------------------------- | ---: | ------------------------------------- |
+| `USER_NOT_FOUND`           |  404 | Usuario no encontrado                 |
+| `EMAIL_ALREADY_REGISTERED` |  409 | Email ya registrado                   |
+| `PRODUCT_NOT_FOUND`        |  404 | Producto no encontrado                |
+| `PRODUCT_INVALID_PRICE`    |  400 | Precio inválido                       |
+| `PRODUCT_INVALID_STOCK`    |  400 | Stock inválido                        |
+| `ORDER_NOT_FOUND`          |  404 | Pedido no encontrado                  |
+| `DELIVERY_NOT_FOUND`       |  404 | Entrega no encontrada                 |
+| `INVALID_MOCK_QUANTITY`    |  400 | Cantidad de mocks inválida            |
+| `MOCK_SEED_MINIMUM`        |  400 | Cantidad mínima de usuarios para seed |
+| `VALIDATION_ERROR`         |  400 | Error de validación de datos          |
+| `DUPLICATE_KEY`            |  409 | Recurso duplicado                     |
+| `ROUTE_NOT_FOUND`          |  404 | Ruta inexistente                      |
+| `INTERNAL_SERVER_ERROR`    |  500 | Error interno del servidor            |
+
+### 3. Middleware global de errores
+
+El middleware `src/middlewares/errorHandler.js` centraliza el procesamiento y la respuesta de los errores de la aplicación.
+
+Su responsabilidad es:
+
+1. Recibir los errores propagados desde los servicios y controladores.
+2. Identificar el código correspondiente.
+3. Consultar el diccionario de errores.
+4. Determinar el código HTTP.
+5. Devolver una respuesta JSON uniforme.
+
+También contempla errores de Mongoose, como errores de validación, identificadores inválidos y claves duplicadas.
+
+Los errores inesperados se responden de forma controlada, evitando exponer detalles internos de la base de datos o información sensible.
+
+Los controladores propagan los errores mediante `next(error)`, mientras que el middleware global se encarga de construir la respuesta HTTP.
+
+### Formato de respuesta de error
+
+Todas las respuestas de error utilizan la siguiente estructura:
+
+```json
+{
+  "status": "error",
+  "message": "Mensaje descriptivo del error",
+  "code": "ERROR_CODE"
+}
+```
+
+Ejemplo de una cantidad inválida en mocks:
+
+```json
+{
+  "status": "error",
+  "message": "La cantidad debe ser un número entero entre 1 y 50",
+  "code": "INVALID_MOCK_QUANTITY"
+}
+```
+
+Ejemplo de una ruta inexistente:
+
+```json
+{
+  "status": "error",
+  "message": "Ruta no encontrada",
+  "code": "ROUTE_NOT_FOUND"
+}
+```
+
+Este formato permite identificar fácilmente el tipo de error, su descripción y el código correspondiente.
+
+## Pruebas del manejo de errores
+
+El sistema permite comprobar el funcionamiento del manejo centralizado mediante solicitudes HTTP.
+
+### Pruebas de cantidades inválidas en Mocks
+
+Con el servidor iniciado mediante `npm run dev`, se pueden probar los siguientes casos:
+
+**Cantidad no numérica:**
+
+```http
+GET /api/mocks/users?qty=abc
+```
+
+Respuesta esperada: HTTP 400.
+
+**Cantidad superior al máximo:**
+
+```http
+GET /api/mocks/users?qty=51
+```
+
+Respuesta esperada: HTTP 400.
+
+**Cantidad negativa:**
+
+```http
+GET /api/mocks/users?qty=-1
+```
+
+Respuesta esperada: HTTP 400.
+
+**Cantidad decimal:**
+
+```http
+GET /api/mocks/users?qty=1.5
+```
+
+Respuesta esperada: HTTP 400.
+
+**Cantidad cero:**
+
+```http
+GET /api/mocks/users?qty=0
+```
+
+Respuesta esperada: HTTP 400.
+
+### Prueba de ruta inexistente
+
+```http
+GET /api/ruta-inventada
+```
+
+Respuesta esperada: HTTP 404 con el código `ROUTE_NOT_FOUND`.
+
+### Prueba de cantidad mínima del seed
+
+```http
+POST /api/mocks/seed?qty=1
+```
+
+Respuesta esperada: HTTP 400 con el código `MOCK_SEED_MINIMUM`.
+
+### Prueba de errores durante el seed
+
+El endpoint:
+
+```http
+POST /api/mocks/seed?qty=10
+```
+
+utiliza una transacción de MongoDB. Si ocurre un error durante la generación o inserción de los datos, se intenta cancelar la transacción y el error se propaga al middleware global para generar una respuesta controlada.
+
+## Pruebas automatizadas
+
+El proyecto utiliza Node.js Test Runner y Supertest para verificar el funcionamiento de los endpoints.
+
+Para ejecutar las pruebas generales:
+
+```bash
+npm test
+```
+
+Este comando ejecuta:
+
+- `tests/health.test.js`
+- `tests/mocks.test.js`
+
+Para ejecutar la prueba de integración del seed:
+
+```bash
+npm run test:seed
+```
+
+Esta prueba se conecta a MongoDB, ejecuta el endpoint de seed y verifica que se generen correctamente usuarios, pedidos y entregas relacionados.
+
+**Importante:** la prueba del seed necesita una conexión válida a MongoDB Atlas o a una instancia compatible con transacciones. Además, genera registros de prueba en la base de datos.
+
 ## Seguridad y manejo de errores
 
 El proyecto incorpora distintas medidas para mejorar la seguridad y el manejo de errores:
@@ -320,9 +540,11 @@ El proyecto incorpora distintas medidas para mejorar la seguridad y el manejo de
 - Validaciones de datos en los modelos de Mongoose.
 - Uso de constantes para roles, estados y prioridades.
 - Manejo centralizado de errores mediante middleware.
-- Uso de una clase `AppError` para gestionar errores personalizados y sus códigos HTTP.
+- Uso de una clase `AppError` para gestionar errores personalizados.
+- Diccionario centralizado para mensajes y códigos HTTP.
+- Respuestas de error uniformes.
+- Protección de información interna ante errores inesperados.
 - Separación de responsabilidades mediante servicios y repositorios.
-- Protección de rutas según roles cuando corresponde.
 
 ## Autor
 

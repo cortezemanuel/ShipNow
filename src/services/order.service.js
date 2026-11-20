@@ -12,7 +12,7 @@ class OrderService {
     const order = await orderRepository.findById(orderId);
 
     if (!order) {
-      throw new AppError("Pedido no encontrado", 404);
+      throw new AppError("ORDER_NOT_FOUND");
     }
 
     return order;
@@ -22,17 +22,17 @@ class OrderService {
     const { customer } = orderData;
 
     if (!customer) {
-      throw new AppError("El cliente es obligatorio", 400);
+      throw new AppError("ORDER_CUSTOMER_REQUIRED");
     }
 
     const user = await userRepository.findById(customer);
 
     if (!user) {
-      throw new AppError("Cliente no encontrado", 404);
+      throw new AppError("ORDER_CUSTOMER_NOT_FOUND");
     }
 
     if (user.role !== USER_ROLES.CUSTOMER) {
-      throw new AppError("Solo los clientes pueden realizar pedidos", 403);
+      throw new AppError("ORDER_CUSTOMER_FORBIDDEN");
     }
 
     return orderRepository.create(orderData);

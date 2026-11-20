@@ -17,15 +17,12 @@ class MocksService {
   validateQuantity(qty) {
     const quantity = Number(qty ?? MOCKING_PARAMETERS.DEFAULT);
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      throw new AppError("La cantidad debe ser un número entero positivo", 400);
-    }
-
-    if (quantity > MOCKING_PARAMETERS.MAX) {
-      throw new AppError(
-        `La cantidad máxima permitida es ${MOCKING_PARAMETERS.MAX}`,
-        400,
-      );
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > MOCKING_PARAMETERS.MAX
+    ) {
+      throw new AppError("INVALID_MOCK_QUANTITY");
     }
 
     return quantity;
@@ -75,10 +72,7 @@ class MocksService {
     const quantity = this.validateQuantity(qty);
 
     if (quantity < 2) {
-      throw new AppError(
-        "Se necesitan al menos dos usuarios para generar el seed",
-        400,
-      );
+      throw new AppError("MOCK_SEED_MINIMUM");
     }
 
     const mockUsers = this.getUsers(quantity);
@@ -96,7 +90,6 @@ class MocksService {
 
   async seedOrders(users, session) {
     const customers = users.filter((user) => user.role === USER_ROLES.CUSTOMER);
-
     const orders = generateMockOrders(customers);
 
     return orderRepository.insertMany(orders, session);
@@ -143,8 +136,19 @@ class MocksService {
         deliveries: deliveries.length,
       };
     } catch (error) {
-      await session.abortTransaction();
-      throw error;
+      try {
+        if (session.inTransaction()) {
+          await session.abortTransaction();
+        }
+      } catch {
+        // Conservamos el error original si también falla el rollback.
+      }
+
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw new AppError("INTERNAL_SERVER_ERROR");
     } finally {
       await session.endSession();
     }

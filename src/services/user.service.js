@@ -12,7 +12,7 @@ class UserService {
     const user = await userRepository.findById(id);
 
     if (!user) {
-      throw new AppError("Usuario no encontrado", 404);
+      throw new AppError("USER_NOT_FOUND");
     }
 
     return user;
@@ -22,20 +22,17 @@ class UserService {
     const { firstName, lastName, email, password, role } = userData;
 
     if (!firstName || !lastName || !email || !password) {
-      throw new AppError(
-        "Todos los campos obligatorios deben completarse",
-        400,
-      );
+      throw new AppError("USER_REQUIRED_FIELDS");
     }
 
     if (role === USER_ROLES.ADMIN) {
-      throw new AppError("No se permite crear usuarios administradores", 403);
+      throw new AppError("USER_CREATION_FORBIDDEN");
     }
 
     const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
-      throw new AppError("El email ya está registrado", 409);
+      throw new AppError("EMAIL_ALREADY_REGISTERED");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -69,7 +66,7 @@ class UserService {
       const existingUser = await userRepository.findByEmail(updatedData.email);
 
       if (existingUser && existingUser._id.toString() !== id) {
-        throw new AppError("El email ya está registrado", 409);
+        throw new AppError("EMAIL_ALREADY_REGISTERED");
       }
     }
 

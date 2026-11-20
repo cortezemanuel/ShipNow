@@ -13,7 +13,7 @@ class DeliveryService {
     const delivery = await deliveryRepository.findById(deliveryId);
 
     if (!delivery) {
-      throw new AppError("Entrega no encontrada", 404);
+      throw new AppError("DELIVERY_NOT_FOUND");
     }
 
     return delivery;
@@ -23,31 +23,28 @@ class DeliveryService {
     const { order, driver } = deliveryData;
 
     if (!order) {
-      throw new AppError("El pedido es obligatorio", 400);
+      throw new AppError("DELIVERY_ORDER_REQUIRED");
     }
 
     const existingOrder = await orderRepository.findById(order);
 
     if (!existingOrder) {
-      throw new AppError("Pedido no encontrado", 404);
+      throw new AppError("ORDER_NOT_FOUND");
     }
 
     if (existingOrder.delivery) {
-      throw new AppError("El pedido ya tiene una entrega asignada", 409);
+      throw new AppError("DELIVERY_ORDER_ALREADY_ASSIGNED");
     }
 
     if (driver) {
       const existingDriver = await userRepository.findById(driver);
 
       if (!existingDriver) {
-        throw new AppError("Repartidor no encontrado", 404);
+        throw new AppError("DELIVERY_DRIVER_NOT_FOUND");
       }
 
       if (existingDriver.role !== USER_ROLES.DRIVER) {
-        throw new AppError(
-          "El usuario asignado no tiene el rol de repartidor",
-          400,
-        );
+        throw new AppError("DELIVERY_DRIVER_INVALID_ROLE");
       }
     }
 

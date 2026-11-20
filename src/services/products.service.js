@@ -11,7 +11,7 @@ class ProductsService {
     const product = await productsRepo.findById(id);
 
     if (!product) {
-      throw new AppError("Producto no encontrado", 404);
+      throw new AppError("PRODUCT_NOT_FOUND");
     }
 
     return product;
@@ -22,11 +22,11 @@ class ProductsService {
     const price = Number(productData.price);
 
     if (!Number.isFinite(price) || price < 0) {
-      throw new AppError("El precio debe ser un número válido", 400);
+      throw new AppError("PRODUCT_INVALID_PRICE");
     }
 
     if (!Number.isInteger(stock) || stock < 0) {
-      throw new AppError("El stock debe ser un entero no negativo", 400);
+      throw new AppError("PRODUCT_INVALID_STOCK");
     }
 
     return productsRepo.create({
@@ -47,7 +47,7 @@ class ProductsService {
       const stock = Number(updatedData.stock);
 
       if (!Number.isInteger(stock) || stock < 0) {
-        throw new AppError("El stock debe ser un entero no negativo", 400);
+        throw new AppError("PRODUCT_INVALID_STOCK");
       }
 
       updatedData.stock = stock;
@@ -59,7 +59,7 @@ class ProductsService {
       const price = Number(updatedData.price);
 
       if (!Number.isFinite(price) || price < 0) {
-        throw new AppError("El precio debe ser un número válido", 400);
+        throw new AppError("PRODUCT_INVALID_PRICE");
       }
 
       updatedData.price = price;
