@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import { MOCKING_PARAMETERS, USER_ROLES } from "../constants/index.js";
 import { generateMockUsers } from "../mocks/user.mocks.js";
 import { generateMockOrders } from "../mocks/order.mocks.js";
 import { generateMockDeliveries } from "../mocks/delivery.mocks.js";
@@ -8,6 +7,11 @@ import userRepository from "../repositories/user.repository.js";
 import orderRepository from "../repositories/order.repository.js";
 import deliveryRepository from "../repositories/delivery.repository.js";
 import AppError from "../utils/errors.js";
+import {
+  MOCKING_PARAMETERS,
+  USER_ROLES,
+  ORDER_STATUS,
+} from "../constants/index.js";
 
 class MocksService {
   validateQuantity(qty) {
@@ -30,6 +34,41 @@ class MocksService {
   getUsers(qty) {
     const quantity = this.validateQuantity(qty);
     return generateMockUsers(quantity);
+  }
+
+  getOrders(qty) {
+    const quantity = this.validateQuantity(qty);
+
+    const customers = generateMockUsers(quantity).map((user) => ({
+      ...user,
+      _id: new mongoose.Types.ObjectId(),
+      role: USER_ROLES.CUSTOMER,
+    }));
+
+    return generateMockOrders(customers);
+  }
+
+  getDeliveries(qty) {
+    const quantity = this.validateQuantity(qty);
+
+    const customers = generateMockUsers(quantity).map((user) => ({
+      ...user,
+      _id: new mongoose.Types.ObjectId(),
+      role: USER_ROLES.CUSTOMER,
+    }));
+
+    const drivers = generateMockUsers(quantity).map((user) => ({
+      ...user,
+      _id: new mongoose.Types.ObjectId(),
+      role: USER_ROLES.DRIVER,
+    }));
+
+    const orders = generateMockOrders(customers).map((order) => ({
+      ...order,
+      _id: new mongoose.Types.ObjectId(),
+    }));
+
+    return generateMockDeliveries(orders, drivers);
   }
 
   async seedUsers(qty, session) {
@@ -74,7 +113,12 @@ class MocksService {
 
     await Promise.all(
       deliveries.map((delivery) =>
-        orderRepository.updateDelivery(delivery.order, delivery._id, session),
+        orderRepository.updateDelivery(
+          delivery.order,
+          delivery._id,
+          delivery.driver ? ORDER_STATUS.ASSIGNED : ORDER_STATUS.CREATED,
+          session,
+        ),
       ),
     );
 

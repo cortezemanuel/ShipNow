@@ -19,10 +19,13 @@ class OrderRepository {
     return Order.insertMany(orders, session ? { session } : {});
   }
 
-  async updateDelivery(orderId, deliveryId, session = null) {
+  async updateDelivery(orderId, deliveryId, status, session = null) {
     return Order.findByIdAndUpdate(
       orderId,
-      { delivery: deliveryId },
+      {
+        delivery: deliveryId,
+        status,
+      },
       {
         new: true,
         runValidators: true,
