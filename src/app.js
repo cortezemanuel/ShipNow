@@ -5,6 +5,7 @@ import usersRouter from "./routes/users.js";
 import mocksRouter from "./routes/mocks.router.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import AppError from "./utils/errors.js";
+import loggerRouter from "./routes/logger.router.js";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/products", productsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/mocks", mocksRouter);
+app.use("/api/logger", loggerRouter);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

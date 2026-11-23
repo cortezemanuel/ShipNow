@@ -12,6 +12,7 @@ import {
   USER_ROLES,
   ORDER_STATUS,
 } from "../constants/index.js";
+import logger from "../utils/logger.js";
 
 class MocksService {
   validateQuantity(qty) {
@@ -130,19 +131,26 @@ class MocksService {
 
       await session.commitTransaction();
 
-      return {
+      const result = {
         users: users.length,
         orders: orders.length,
         deliveries: deliveries.length,
       };
+
+      logger.info("Seed ejecutado correctamente", result);
+
+      return result;
     } catch (error) {
       try {
         if (session.inTransaction()) {
           await session.abortTransaction();
         }
-      } catch {
-        // Conservamos el error original si también falla el rollback.
-      }
+      } catch {}
+
+      logger.error("Error durante la ejecución del seed", {
+        message: error.message,
+        stack: error.stack,
+      });
 
       if (error instanceof AppError) {
         throw error;

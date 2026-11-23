@@ -16,6 +16,8 @@ El proyecto está desarrollado utilizando una arquitectura por capas, separando 
 - **Nodemon:** reinicio automático del servidor durante el desarrollo.
 - **Supertest:** pruebas automatizadas de endpoints HTTP.
 - **Node.js Test Runner:** ejecución de pruebas automatizadas.
+- **Winston:** gestión centralizada de logs.
+- **Winston Daily Rotate File:** rotación automática de archivos de logs.
 
 ## Arquitectura del proyecto
 
@@ -36,55 +38,66 @@ El proyecto utiliza una arquitectura por capas, separando las responsabilidades 
 ### Estructura de carpetas
 
 ```text
-src/
-├── app.js
-├── server.js
-├── config/
-│   ├── database.config.js
-│   └── env.config.js
-├── constants/
-│   └── index.js
-├── controllers/
-│   ├── mocks.controller.js
-│   ├── order.controller.js
-│   ├── products.controller.js
-│   └── user.controller.js
-├── middlewares/
-│   └── errorHandler.js
-├── models/
-│   ├── delivery.model.js
-│   ├── order.model.js
-│   ├── product.model.js
-│   └── user.model.js
-├── mocks/
-│   ├── user.mocks.js
-│   ├── order.mocks.js
-│   └── delivery.mocks.js
-├── repositories/
-│   ├── delivery.repository.js
-│   ├── order.repository.js
-│   ├── product.repository.js
-│   └── user.repository.js
-├── routes/
-│   ├── deliveries.js
-│   ├── mocks.router.js
-│   ├── orders.js
-│   ├── products.router.js
-│   └── users.js
-├── services/
-│   ├── delivery.service.js
-│   ├── mocks.service.js
-│   ├── order.service.js
-│   ├── products.service.js
-│   └── user.service.js
-└── utils/
-    ├── errorDictionary.js
-    └── errors.js
-
-tests/
-├── health.test.js
-├── mocks.test.js
-└── seed.test.js
+ShipNow/
+├── src/
+│   ├── app.js
+│   ├── server.js
+│   ├── config/
+│   │   ├── database.config.js
+│   │   └── env.config.js
+│   ├── constants/
+│   │   └── index.js
+│   ├── controllers/
+│   │   ├── logger.controller.js
+│   │   ├── mocks.controller.js
+│   │   ├── order.controller.js
+│   │   ├── products.controller.js
+│   │   └── user.controller.js
+│   ├── middlewares/
+│   │   └── errorHandler.js
+│   ├── models/
+│   │   ├── delivery.model.js
+│   │   ├── order.model.js
+│   │   ├── product.model.js
+│   │   └── user.model.js
+│   ├── mocks/
+│   │   ├── user.mocks.js
+│   │   ├── order.mocks.js
+│   │   └── delivery.mocks.js
+│   ├── repositories/
+│   │   ├── delivery.repository.js
+│   │   ├── order.repository.js
+│   │   ├── product.repository.js
+│   │   └── user.repository.js
+│   ├── routes/
+│   │   ├── deliveries.js
+│   │   ├── logger.router.js
+│   │   ├── mocks.router.js
+│   │   ├── orders.js
+│   │   ├── products.router.js
+│   │   └── users.js
+│   ├── services/
+│   │   ├── delivery.service.js
+│   │   ├── mocks.service.js
+│   │   ├── order.service.js
+│   │   ├── products.service.js
+│   │   └── user.service.js
+│   └── utils/
+│       ├── errorDictionary.js
+│       ├── errors.js
+│       └── logger.js
+├── tests/
+│   ├── health.test.js
+│   ├── mocks.test.js
+│   └── seed.test.js
+├── logs/
+│   └── .gitkeep
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+├── package-lock.json
+└── README.md
 ```
 
 ## Instalación y configuración
@@ -203,6 +216,14 @@ Si no se especifica `qty`, se utiliza el valor predeterminado de 10 registros.
 La cantidad debe ser un número entero positivo y no puede superar el máximo de 50 registros.
 
 Los valores inválidos, como texto, números negativos, cero, decimales o cantidades superiores al máximo permitido, generan una respuesta HTTP 400.
+
+### Logging
+
+Base URL: `/api/logger`
+
+| Método | Endpoint           | Descripción                                                 |
+| ------ | ------------------ | ----------------------------------------------------------- |
+| GET    | `/api/logger/test` | Genera registros de prueba para los seis niveles de logging |
 
 ## Generación de datos de prueba (Mocking)
 
@@ -530,6 +551,106 @@ Esta prueba se conecta a MongoDB, ejecuta el endpoint de seed y verifica que se 
 
 **Importante:** la prueba del seed necesita una conexión válida a MongoDB Atlas o a una instancia compatible con transacciones. Además, genera registros de prueba en la base de datos.
 
+## Logging y monitoreo básico
+
+El proyecto implementa un sistema centralizado de logging utilizando Winston y Winston Daily Rotate File.
+
+El logger se encuentra en `src/utils/logger.js` y permite registrar eventos de la aplicación, errores y operaciones importantes.
+
+### Niveles de logging
+
+Se utilizan seis niveles personalizados:
+
+| Nivel     | Descripción                                     |
+| --------- | ----------------------------------------------- |
+| `debug`   | Información detallada para depuración.          |
+| `http`    | Eventos relacionados con solicitudes HTTP.      |
+| `info`    | Información general del funcionamiento.         |
+| `warning` | Advertencias y errores controlados.             |
+| `error`   | Errores internos de la aplicación.              |
+| `fatal`   | Errores críticos que afectan el funcionamiento. |
+
+### Formato de los registros
+
+Los mensajes utilizan el siguiente formato:
+
+```text
+YYYY-MM-DD HH:mm:ss [level] message
+```
+
+Ejemplo:
+
+```text
+2026-11-23 16:44:16 [info] MongoDB conectado correctamente
+```
+
+### Configuración por entorno
+
+El comportamiento del logger se integra con la variable `NODE_ENV`.
+
+- **Development:** registra todos los niveles, desde `debug` hasta `fatal`.
+- **Production:** registra los niveles `info`, `warning`, `error` y `fatal`.
+
+### Archivos de registro
+
+Los registros se almacenan en la carpeta `logs/`.
+
+- `combined-YYYY-MM-DD.log`: contiene todos los niveles de logging y utiliza rotación diaria, conservando los registros durante 14 días.
+- `error.log`: almacena exclusivamente los niveles `error` y `fatal`, con rotación por tamaño de archivo.
+
+El archivo de errores tiene un límite de 10 MB y conserva hasta cinco archivos rotados.
+
+Los archivos generados se excluyen del repositorio mediante `.gitignore`. Se conserva la carpeta `logs/` utilizando `.gitkeep`.
+
+### Integración del logger
+
+Winston se utiliza en distintas partes de la aplicación:
+
+- Inicio del servidor.
+- Conexión y errores de MongoDB.
+- Middleware global de manejo de errores.
+- Ejecución del seed de datos de prueba.
+- Creación de pedidos.
+
+Los errores controlados se registran como `warning`, mientras que los errores internos se registran como `error`. Los errores críticos de inicio y conexión se registran como `fatal`.
+
+### Endpoint de prueba
+
+Se incorpora un endpoint para comprobar los seis niveles de logging:
+
+| Método | Endpoint           | Descripción                                  |
+| ------ | ------------------ | -------------------------------------------- |
+| GET    | `/api/logger/test` | Genera un registro de prueba por cada nivel. |
+
+Para probarlo, iniciar el servidor:
+
+```bash
+npm run dev
+```
+
+Luego ejecutar:
+
+```http
+GET /api/logger/test
+```
+
+También puede probarse desde PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/logger/test" -Method Get
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "success",
+  "message": "Se generaron registros de prueba en todos los niveles"
+}
+```
+
+La ejecución genera mensajes en consola y en los archivos correspondientes dentro de `logs/`.
+
 ## Seguridad y manejo de errores
 
 El proyecto incorpora distintas medidas para mejorar la seguridad y el manejo de errores:
@@ -545,6 +666,10 @@ El proyecto incorpora distintas medidas para mejorar la seguridad y el manejo de
 - Respuestas de error uniformes.
 - Protección de información interna ante errores inesperados.
 - Separación de responsabilidades mediante servicios y repositorios.
+- Logging centralizado mediante Winston.
+- Separación de registros generales y errores críticos.
+- Rotación automática de archivos de registro.
+- Exclusión de archivos de logs y credenciales del repositorio.
 
 ## Autor
 
