@@ -20,30 +20,31 @@ class OrderService {
   }
 
   async create(orderData) {
-  const { customer } = orderData;
+    const { customer } = orderData;
 
-  if (!customer) {
-    throw new AppError("ORDER_CUSTOMER_REQUIRED");
+    if (!customer) {
+      throw new AppError("ORDER_CUSTOMER_REQUIRED");
+    }
+
+    const user = await userRepository.findById(customer);
+
+    if (!user) {
+      throw new AppError("ORDER_CUSTOMER_NOT_FOUND");
+    }
+
+    if (user.role !== USER_ROLES.CUSTOMER) {
+      throw new AppError("ORDER_CUSTOMER_FORBIDDEN");
+    }
+
+    const order = await orderRepository.create(orderData);
+
+    logger.info("Pedido creado correctamente", {
+      orderId: order._id.toString(),
+      customerId: customer.toString(),
+    });
+
+    return order;
   }
-
-  const user = await userRepository.findById(customer);
-
-  if (!user) {
-    throw new AppError("ORDER_CUSTOMER_NOT_FOUND");
-  }
-
-  if (user.role !== USER_ROLES.CUSTOMER) {
-    throw new AppError("ORDER_CUSTOMER_FORBIDDEN");
-  }
-
-  const order = await orderRepository.create(orderData);
-
-  logger.info("Pedido creado correctamente", {
-    orderId: order._id.toString(),
-    customerId: customer.toString(),
-  });
-
-  return order;
 }
 
 export default new OrderService();

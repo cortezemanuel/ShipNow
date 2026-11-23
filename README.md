@@ -190,6 +190,26 @@ Base URL: `/api/users`
 | PUT    | `/api/users/:id` | Actualiza un usuario       |
 | DELETE | `/api/users/:id` | Elimina un usuario         |
 
+### Pedidos
+
+Base URL: `/api/orders`
+
+| Método | Endpoint          | Descripción               |
+| ------ | ----------------- | ------------------------- |
+| GET    | `/api/orders`     | Obtiene todos los pedidos |
+| GET    | `/api/orders/:id` | Obtiene un pedido por ID  |
+| POST   | `/api/orders`     | Crea un pedido            |
+
+### Entregas
+
+Base URL: `/api/deliveries`
+
+| Método | Endpoint              | Descripción                |
+| ------ | --------------------- | -------------------------- |
+| GET    | `/api/deliveries`     | Obtiene todas las entregas |
+| GET    | `/api/deliveries/:id` | Obtiene una entrega por ID |
+| POST   | `/api/deliveries`     | Crea una entrega           |
+
 ### Mocks
 
 Base URL: `/api/mocks`
@@ -650,6 +670,52 @@ Respuesta esperada:
 ```
 
 La ejecución genera mensajes en consola y en los archivos correspondientes dentro de `logs/`.
+
+## Documentación de la API con Swagger
+
+El proyecto incorpora Swagger para documentar los endpoints de la API REST mediante la especificación OpenAPI 3.0.
+
+La configuración se encuentra centralizada en `src/config/swagger.js`.
+
+Se utilizan las siguientes dependencias:
+
+- **Swagger JSDoc:** genera la especificación OpenAPI a partir de las anotaciones en las rutas.
+- **Swagger UI Express:** permite visualizar y probar los endpoints mediante una interfaz web.
+
+### Acceso a la documentación
+
+Con el servidor iniciado mediante:
+
+```bash
+npm run dev
+```
+
+La documentación está disponible en:
+
+`http://localhost:3000/api/docs`
+
+### Recursos documentados
+
+La documentación incluye Users, Products, Orders, Deliveries, Mocks y Logger.
+
+Se documentan los métodos HTTP, rutas, parámetros, datos de entrada, respuestas exitosas y posibles errores.
+
+### Esquemas reutilizables
+
+- `User`
+- `UserCreateRequest`
+- `Product`
+- `ProductCreateRequest`
+- `ProductUpdateRequest`
+- `Order`
+- `OrderItem`
+- `OrderCreateRequest`
+- `Delivery`
+- `DeliveryCreateRequest`
+- `ErrorResponse`
+- `SuccessResponse`
+
+Swagger UI permite ejecutar solicitudes HTTP directamente desde el navegador mediante la opción **Try it out**.
 
 ## Seguridad y manejo de errores
 

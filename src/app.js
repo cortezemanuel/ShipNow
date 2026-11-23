@@ -6,14 +6,21 @@ import mocksRouter from "./routes/mocks.router.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import AppError from "./utils/errors.js";
 import loggerRouter from "./routes/logger.router.js";
+import ordersRouter from "./routes/orders.js";
+import deliveriesRouter from "./routes/deliveries.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/products", productsRouter);
+app.use("/api/orders", ordersRouter);
+app.use("/api/deliveries", deliveriesRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/mocks", mocksRouter);
 app.use("/api/logger", loggerRouter);
