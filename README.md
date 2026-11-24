@@ -16,8 +16,6 @@ El proyecto está desarrollado utilizando una arquitectura por capas, separando 
 - **Dotenv:** gestión de variables de entorno.
 - **Faker:** generación de datos ficticios para pruebas.
 - **Nodemon:** reinicio automático del servidor durante el desarrollo.
-- **Supertest:** pruebas automatizadas de endpoints HTTP.
-- **Node.js Test Runner:** ejecución de pruebas automatizadas.
 - **Winston:** gestión centralizada de logs.
 - **Winston Daily Rotate File:** rotación automática de archivos de logs.
 
@@ -118,9 +116,8 @@ ShipNow/
 │   ├── users.test.js
 │   └── usersEndpoint.test.js
 │
-├── .env
 ├── .env.example
-├── .env.test
+├── .env.test.example
 ├── .gitignore
 ├── package-lock.json
 ├── package.json
@@ -149,19 +146,33 @@ npm install
 
 ### 4. Configurar las variables de entorno
 
-Crear un archivo `.env` en la raíz del proyecto con las siguientes variables:
+Crear el archivo .env en la raíz del proyecto tomando como referencia .env.example.
 
-```env
+cp .env.example .env
+
+Configurar las siguientes variables:
+
 PORT=3000
 MONGODB_URI=tu_uri_de_mongodb
 NODE_ENV=development
-```
 
-- `PORT`: puerto en el que se ejecutará el servidor.
-- `MONGODB_URI`: cadena de conexión a MongoDB.
-- `NODE_ENV`: entorno de ejecución.
+PORT: puerto en el que se ejecutará el servidor.
+
+MONGODB_URI: cadena de conexión a MongoDB.
+
+NODE_ENV: entorno de ejecución.
 
 Las variables de entorno son validadas al iniciar la aplicación. Si falta alguna variable obligatoria o el puerto no es válido, la aplicación informa el error correspondiente.
+
+### 5. Configurar el entorno de pruebas
+
+Crear el archivo .env.test tomando como referencia .env.test.example.
+
+cp .env.test.example .env.test
+
+Configurar MONGODB_URI con una conexión a la base de datos shipnow_test.
+
+Importante: las pruebas del endpoint Seed utilizan transacciones de MongoDB. Por este motivo, se requiere MongoDB Atlas o una instancia local configurada como Replica Set. Una instancia standalone no admite estas transacciones.
 
 ## Ejecución del proyecto
 
@@ -184,6 +195,10 @@ http://localhost:3000
 ```
 
 ## Endpoints disponibles
+
+### Encabezados y formato de solicitudes
+
+La API no requiere encabezados de autenticación ni encabezados personalizados. Para las solicitudes que envían un cuerpo JSON (POST y PUT), utilizar el encabezado `Content-Type: application/json`.
 
 ### Health Check
 
@@ -628,7 +643,7 @@ Las pruebas que generan registros en MongoDB contemplan la limpieza de los datos
 
 La conexión a la base de datos de testing se gestiona mediante hooks de Mocha, que conectan antes de ejecutar la suite y desconectan al finalizar.
 
-La suite fue ejecutada dos veces consecutivas, obteniendo 58 pruebas aprobadas en cada ejecución.
+En la última ejecución, la suite obtuvo 59 pruebas aprobadas.
 
 ## Logging y monitoreo básico
 

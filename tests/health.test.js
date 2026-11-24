@@ -14,4 +14,13 @@ describe("Testing endpoint Health", () => {
     );
     expect(response.body).to.have.property("timestamp");
   });
+
+  it("Debe responder 404 cuando se consulta una ruta inexistente", async () => {
+    const response = await request(app).get("/api/ruta-inexistente");
+
+    expect(response.status).to.equal(404);
+    expect(response.body).to.have.property("status", "error");
+    expect(response.body).to.have.property("message", "Ruta no encontrada");
+    expect(response.body).to.have.property("code", "ROUTE_NOT_FOUND");
+  });
 });

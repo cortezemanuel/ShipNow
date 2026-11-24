@@ -39,7 +39,17 @@ let regularUserId;
 let orderId;
 
 describe("Testing endpoints de Orders", () => {
-  before(async () => {
+  beforeEach(async () => {
+    const existingUsers = await User.find({
+      email: {
+        $in: [customerData.email, regularUserData.email],
+      },
+    }).select("_id");
+
+    await Order.deleteMany({
+      customer: { $in: existingUsers.map((user) => user._id) },
+    });
+
     await User.deleteMany({
       email: {
         $in: [customerData.email, regularUserData.email],
@@ -51,6 +61,13 @@ describe("Testing endpoints de Orders", () => {
 
     customerId = customer._id;
     regularUserId = regularUser._id;
+
+    const order = await Order.create({
+      ...orderData,
+      customer: customerId,
+    });
+
+    orderId = order._id;
   });
 
   after(async () => {
@@ -80,8 +97,6 @@ describe("Testing endpoints de Orders", () => {
       "deliveryAddress",
       orderData.deliveryAddress,
     );
-
-    orderId = response.body.payload._id;
   });
 
   it("Rechazar la creación sin cliente", async () => {
@@ -90,6 +105,7 @@ describe("Testing endpoints de Orders", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("ORDER_CUSTOMER_REQUIRED");
+    expect(response.body.message).to.equal("El cliente es obligatorio");
   });
 
   it("Rechazar un cliente inexistente", async () => {
@@ -103,6 +119,7 @@ describe("Testing endpoints de Orders", () => {
     expect(response.status).to.equal(404);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("ORDER_CUSTOMER_NOT_FOUND");
+    expect(response.body.message).to.equal("Cliente no encontrado");
   });
 
   it("Rechazar un usuario que no tenga rol de cliente", async () => {
@@ -116,6 +133,9 @@ describe("Testing endpoints de Orders", () => {
     expect(response.status).to.equal(403);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("ORDER_CUSTOMER_FORBIDDEN");
+    expect(response.body.message).to.equal(
+      "Solo los clientes pueden realizar pedidos",
+    );
   });
 
   it("Listar todos los pedidos", async () => {
@@ -137,7 +157,7 @@ describe("Testing endpoints de Orders", () => {
 
     expect(response.status).to.equal(200);
     expect(response.body.status).to.equal("success");
-    expect(response.body.payload).to.have.property("_id", orderId);
+    expect(response.body.payload).to.have.property("_id", String(orderId));
     expect(response.body.payload).to.have.property(
       "deliveryAddress",
       orderData.deliveryAddress,
@@ -150,6 +170,9 @@ describe("Testing endpoints de Orders", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("VALIDATION_ERROR");
+    expect(response.body.message).to.equal(
+      "Los datos proporcionados no son válidos",
+    );
   });
 
   it("Rechazar un pedido inexistente", async () => {

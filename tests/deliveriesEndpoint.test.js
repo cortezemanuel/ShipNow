@@ -42,41 +42,35 @@ let customerId;
 let driverId;
 let regularUserId;
 let orderId;
+let orderAlreadyAssignedId;
 let deliveryId;
 let orderWithoutDriverId;
 let orderWithInvalidDriverId;
 
 describe("Testing endpoints de Deliveries", () => {
-  before(async () => {
-    const existingCustomer = await User.findOne({
-      email: customerData.email,
+  beforeEach(async () => {
+    const existingUsers = await User.find({
+      email: {
+        $in: [customerData.email, driverData.email, regularUserData.email],
+      },
+    }).select("_id");
+
+    const existingOrders = await Order.find({
+      customer: { $in: existingUsers.map((user) => user._id) },
+    }).select("_id");
+
+    const existingOrderIds = existingOrders.map((order) => order._id);
+
+    await Delivery.deleteMany({
+      $or: [
+        { order: { $in: existingOrderIds } },
+        { driver: { $in: existingUsers.map((user) => user._id) } },
+      ],
     });
 
-    if (existingCustomer) {
-      const oldOrders = await Order.find({
-        customer: existingCustomer._id,
-      });
-
-      const oldOrderIds = oldOrders.map((order) => order._id);
-
-      await Delivery.deleteMany({
-        order: { $in: oldOrderIds },
-      });
-
-      await Order.deleteMany({
-        customer: existingCustomer._id,
-      });
-    }
-
-    const existingDriver = await User.findOne({
-      email: driverData.email,
+    await Order.deleteMany({
+      customer: { $in: existingUsers.map((user) => user._id) },
     });
-
-    if (existingDriver) {
-      await Delivery.deleteMany({
-        driver: existingDriver._id,
-      });
-    }
 
     await User.deleteMany({
       email: {
@@ -97,8 +91,6 @@ describe("Testing endpoints de Deliveries", () => {
       customer: customerId,
     });
 
-    orderId = order._id;
-
     const orderWithoutDriver = await Order.create({
       ...orderData,
       customer: customerId,
@@ -109,8 +101,27 @@ describe("Testing endpoints de Deliveries", () => {
       customer: customerId,
     });
 
+    orderId = order._id;
     orderWithoutDriverId = orderWithoutDriver._id;
     orderWithInvalidDriverId = orderWithInvalidDriver._id;
+
+    const orderAlreadyAssigned = await Order.create({
+      ...orderData,
+      customer: customerId,
+    });
+
+    orderAlreadyAssignedId = orderAlreadyAssigned._id;
+
+    const delivery = await Delivery.create({
+      order: orderAlreadyAssignedId,
+      driver: driverId,
+    });
+
+    deliveryId = delivery._id;
+
+    await Order.findByIdAndUpdate(orderAlreadyAssignedId, {
+      delivery: delivery._id,
+    });
   });
 
   after(async () => {
@@ -118,6 +129,7 @@ describe("Testing endpoints de Deliveries", () => {
       orderId,
       orderWithoutDriverId,
       orderWithInvalidDriverId,
+      orderAlreadyAssignedId,
     ].filter(Boolean);
 
     await Delivery.deleteMany({
@@ -161,6 +173,7 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("DELIVERY_ORDER_REQUIRED");
+    expect(response.body.message).to.equal("El pedido es obligatorio");
   });
 
   it("Rechazar un pedido inexistente", async () => {
@@ -171,18 +184,22 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.status).to.equal(404);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("ORDER_NOT_FOUND");
+    expect(response.body.message).to.equal("Pedido no encontrado");
   });
 
   it("Rechazar un pedido que ya tiene una entrega", async () => {
     const response = await request(app)
       .post("/api/deliveries")
       .send({
-        order: String(orderId),
+        order: String(orderAlreadyAssignedId),
       });
 
     expect(response.status).to.equal(409);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("DELIVERY_ORDER_ALREADY_ASSIGNED");
+    expect(response.body.message).to.equal(
+      "El pedido ya tiene una entrega asignada",
+    );
   });
 
   it("Rechazar un repartidor inexistente", async () => {
@@ -196,6 +213,7 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.status).to.equal(404);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("DELIVERY_DRIVER_NOT_FOUND");
+    expect(response.body.message).to.equal("Repartidor no encontrado");
   });
 
   it("Rechazar un usuario que no tenga rol de repartidor", async () => {
@@ -209,6 +227,9 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("DELIVERY_DRIVER_INVALID_ROLE");
+    expect(response.body.message).to.equal(
+      "El usuario asignado no tiene el rol de repartidor",
+    );
   });
 
   it("Listar todas las entregas", async () => {
@@ -239,6 +260,9 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("VALIDATION_ERROR");
+    expect(response.body.message).to.equal(
+      "Los datos proporcionados no son válidos",
+    );
   });
 
   it("Rechazar una entrega inexistente", async () => {

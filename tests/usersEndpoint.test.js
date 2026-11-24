@@ -17,6 +17,19 @@ const user2 = {
   email: "maria_gomez_endpoint_test@shipnow.com",
   password: "123456",
 };
+const newUser = {
+  firstName: "Juan",
+  lastName: "Lopez",
+  email: "juan_lopez_endpoint_test@shipnow.com",
+  password: "123456",
+};
+
+const newUser2 = {
+  firstName: "Laura",
+  lastName: "Fernandez",
+  email: "laura_fernandez_endpoint_test@shipnow.com",
+  password: "123456",
+};
 
 const adminEmail = "admin_endpoint_test@shipnow.com";
 
@@ -27,43 +40,57 @@ let userId;
 let user2Id;
 
 describe("Testing endpoints de Users", () => {
-  before(async () => {
+  beforeEach(async () => {
     await User.deleteMany({
       email: {
-        $in: [user.email, user2.email, adminEmail],
+        $in: [
+          user.email,
+          user2.email,
+          newUser.email,
+          newUser2.email,
+          adminEmail,
+        ],
       },
     });
+
+    const firstUser = await User.create(user);
+    const secondUser = await User.create(user2);
+
+    userId = String(firstUser._id);
+    user2Id = String(secondUser._id);
   });
 
   after(async () => {
     await User.deleteMany({
       email: {
-        $in: [user.email, user2.email, adminEmail],
+        $in: [
+          user.email,
+          user2.email,
+          newUser.email,
+          newUser2.email,
+          adminEmail,
+        ],
       },
     });
   });
 
   it("Crear un usuario", async () => {
-    const response = await request(app).post("/api/users").send(user);
+    const response = await request(app).post("/api/users").send(newUser);
 
     expect(response.status).to.equal(201);
     expect(response.body.status).to.equal("success");
     expect(response.body.payload).to.have.property("_id");
-    expect(response.body.payload).to.have.property("firstName", "Jose");
-    expect(response.body.payload).to.have.property("lastName", "Perez");
+    expect(response.body.payload).to.have.property("firstName", "Juan");
+    expect(response.body.payload).to.have.property("lastName", "Lopez");
     expect(response.body.payload).to.not.have.property("password");
-
-    userId = response.body.payload._id;
   });
 
   it("Crear un segundo usuario", async () => {
-    const response = await request(app).post("/api/users").send(user2);
+    const response = await request(app).post("/api/users").send(newUser2);
 
     expect(response.status).to.equal(201);
     expect(response.body.status).to.equal("success");
     expect(response.body.payload).to.have.property("_id");
-
-    user2Id = response.body.payload._id;
   });
 
   it("Rechazar la creación con campos obligatorios faltantes", async () => {
@@ -91,6 +118,9 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(403);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("USER_CREATION_FORBIDDEN");
+    expect(response.body.message).to.equal(
+      "No se permite crear usuarios administradores",
+    );
 
     const adminInDatabase = await User.findOne({ email: admin.email });
 
@@ -103,6 +133,7 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(409);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("EMAIL_ALREADY_REGISTERED");
+    expect(response.body.message).to.equal("El email ya está registrado");
   });
 
   it("Listar todos los usuarios", async () => {
@@ -134,6 +165,9 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("VALIDATION_ERROR");
+    expect(response.body.message).to.equal(
+      "Los datos proporcionados no son válidos",
+    );
   });
 
   it("Rechazar un usuario inexistente", async () => {
@@ -164,6 +198,9 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("VALIDATION_ERROR");
+    expect(response.body.message).to.equal(
+      "Los datos proporcionados no son válidos",
+    );
   });
 
   it("Rechazar la actualización de un usuario inexistente", async () => {
@@ -174,6 +211,7 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(404);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("USER_NOT_FOUND");
+    expect(response.body.message).to.equal("Usuario no encontrado");
   });
 
   it("Eliminar un usuario", async () => {
@@ -194,6 +232,9 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(400);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("VALIDATION_ERROR");
+    expect(response.body.message).to.equal(
+      "Los datos proporcionados no son válidos",
+    );
   });
 
   it("Rechazar la eliminación de un usuario inexistente", async () => {
@@ -202,5 +243,6 @@ describe("Testing endpoints de Users", () => {
     expect(response.status).to.equal(404);
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("USER_NOT_FOUND");
+    expect(response.body.message).to.equal("Usuario no encontrado");
   });
 });
