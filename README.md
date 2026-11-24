@@ -6,7 +6,9 @@ El proyecto está desarrollado utilizando una arquitectura por capas, separando 
 
 ## Tecnologías utilizadas
 
-- **Node.js:** entorno de ejecución.
+- **Mocha:** framework para ejecutar pruebas automatizadas.
+- **Chai:** biblioteca para realizar aserciones.
+- **Supertest:** herramienta para probar endpoints HTTP.
 - **Express:** framework para la creación de la API REST.
 - **MongoDB:** base de datos NoSQL.
 - **Mongoose:** modelado y gestión de documentos.
@@ -39,36 +41,47 @@ El proyecto utiliza una arquitectura por capas, separando las responsabilidades 
 
 ```text
 ShipNow/
+│
 ├── src/
 │   ├── app.js
 │   ├── server.js
+│   │
 │   ├── config/
 │   │   ├── database.config.js
-│   │   └── env.config.js
+│   │   ├── env.config.js
+│   │   └── swagger.js
+│   │
 │   ├── constants/
 │   │   └── index.js
+│   │
 │   ├── controllers/
+│   │   ├── delivery.controller.js
 │   │   ├── logger.controller.js
 │   │   ├── mocks.controller.js
 │   │   ├── order.controller.js
 │   │   ├── products.controller.js
 │   │   └── user.controller.js
+│   │
 │   ├── middlewares/
 │   │   └── errorHandler.js
+│   │
+│   ├── mocks/
+│   │   ├── delivery.mocks.js
+│   │   ├── order.mocks.js
+│   │   └── user.mocks.js
+│   │
 │   ├── models/
 │   │   ├── delivery.model.js
 │   │   ├── order.model.js
 │   │   ├── product.model.js
 │   │   └── user.model.js
-│   ├── mocks/
-│   │   ├── user.mocks.js
-│   │   ├── order.mocks.js
-│   │   └── delivery.mocks.js
+│   │
 │   ├── repositories/
 │   │   ├── delivery.repository.js
 │   │   ├── order.repository.js
 │   │   ├── product.repository.js
 │   │   └── user.repository.js
+│   │
 │   ├── routes/
 │   │   ├── deliveries.js
 │   │   ├── logger.router.js
@@ -76,27 +89,41 @@ ShipNow/
 │   │   ├── orders.js
 │   │   ├── products.router.js
 │   │   └── users.js
+│   │
 │   ├── services/
 │   │   ├── delivery.service.js
 │   │   ├── mocks.service.js
 │   │   ├── order.service.js
 │   │   ├── products.service.js
 │   │   └── user.service.js
+│   │
 │   └── utils/
 │       ├── errorDictionary.js
 │       ├── errors.js
 │       └── logger.js
+│
 ├── tests/
+│   ├── helpers/
+│   │   ├── database.js
+│   │   └── hooks.js
+│   │
+│   ├── deliveries.test.js
+│   ├── deliveriesEndpoint.test.js
 │   ├── health.test.js
 │   ├── mocks.test.js
-│   └── seed.test.js
-├── logs/
-│   └── .gitkeep
+│   ├── orders.test.js
+│   ├── ordersEndpoint.test.js
+│   ├── seed.test.js
+│   ├── swagger.test.js
+│   ├── users.test.js
+│   └── usersEndpoint.test.js
+│
 ├── .env
 ├── .env.example
+├── .env.test
 ├── .gitignore
-├── package.json
 ├── package-lock.json
+├── package.json
 └── README.md
 ```
 
@@ -548,28 +575,60 @@ utiliza una transacción de MongoDB. Si ocurre un error durante la generación o
 
 ## Pruebas automatizadas
 
-El proyecto utiliza Node.js Test Runner y Supertest para verificar el funcionamiento de los endpoints.
+El proyecto utiliza Mocha, Chai y Supertest para verificar el funcionamiento de la API mediante pruebas unitarias y funcionales.
 
-Para ejecutar las pruebas generales:
+### Configuración del entorno de testing
+
+Las pruebas utilizan una base de datos independiente de la base de desarrollo.
+
+Se configura mediante el archivo `.env.test`, ubicado en la raíz del proyecto y excluido del repositorio.
+
+El archivo debe contener:
+
+```env
+PORT=3001
+MONGODB_URI=tu_uri_de_mongodb_con_la_base_shipnow_test
+NODE_ENV=test
+```
+
+La base de datos utilizada para las pruebas es `shipnow_test`.
+
+### Ejecutar las pruebas
+
+Para ejecutar la suite completa:
 
 ```bash
 npm test
 ```
 
-Este comando ejecuta:
-
-- `tests/health.test.js`
-- `tests/mocks.test.js`
-
-Para ejecutar la prueba de integración del seed:
+Para ejecutar únicamente las pruebas del endpoint Seed:
 
 ```bash
 npm run test:seed
 ```
 
-Esta prueba se conecta a MongoDB, ejecuta el endpoint de seed y verifica que se generen correctamente usuarios, pedidos y entregas relacionados.
+### Cobertura de las pruebas
 
-**Importante:** la prueba del seed necesita una conexión válida a MongoDB Atlas o a una instancia compatible con transacciones. Además, genera registros de prueba en la base de datos.
+La suite incluye pruebas de:
+
+- Health Check.
+- Usuarios.
+- Pedidos.
+- Entregas.
+- Mocks.
+- Generación de datos relacionados mediante Seed.
+- Logging.
+- Documentación Swagger.
+
+Se verifican respuestas exitosas, códigos HTTP, validaciones, errores controlados y estructura de las respuestas.
+
+### Limpieza y repetibilidad
+
+Las pruebas que generan registros en MongoDB contemplan la limpieza de los datos creados durante su ejecución.
+
+La conexión a la base de datos de testing se gestiona mediante hooks de Mocha, que conectan antes de ejecutar la suite y desconectan al finalizar.
+
+La suite fue ejecutada dos veces consecutivas, obteniendo 58 pruebas aprobadas en cada ejecución.
 
 ## Logging y monitoreo básico
 
@@ -690,9 +749,9 @@ Con el servidor iniciado mediante:
 npm run dev
 ```
 
-La documentación está disponible en:
+La especificación OpenAPI en formato JSON está disponible en:
 
-`http://localhost:3000/api/docs`
+`http://localhost:3000/api/docs-json`
 
 ### Recursos documentados
 

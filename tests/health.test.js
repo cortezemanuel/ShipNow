@@ -1,13 +1,17 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect } from "chai";
 import request from "supertest";
 import app from "../src/app.js";
 
-test("GET /api/health debe responder correctamente", async () => {
-  const response = await request(app).get("/api/health");
+describe("Testing endpoint Health", () => {
+  it("GET /api/health debe responder correctamente", async () => {
+    const response = await request(app).get("/api/health");
 
-  assert.equal(response.status, 200);
-  assert.equal(response.body.status, "ok");
-  assert.equal(response.body.message, "ShipNow API funcionando correctamente");
-  assert.ok(response.body.timestamp);
+    expect(response.status).to.equal(200);
+    expect(response.body).to.have.property("status", "ok");
+    expect(response.body).to.have.property(
+      "message",
+      "ShipNow API funcionando correctamente",
+    );
+    expect(response.body).to.have.property("timestamp");
+  });
 });
