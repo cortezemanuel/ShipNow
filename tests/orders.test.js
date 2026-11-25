@@ -95,11 +95,17 @@ describe("Testing Repository de Orders", () => {
   });
 
   it("Buscar todos los pedidos", async () => {
-    const orders = await orderRepository.findAll();
+    const result = await orderRepository.findAll({
+      page: 1,
+      limit: 100,
+      status: "",
+      priority: "",
+    });
 
-    expect(orders).to.be.an("array");
+    expect(result.orders).to.be.an("array");
+    expect(result.total).to.be.a("number");
 
-    const orderFound = orders.find(
+    const orderFound = result.orders.find(
       (order) => String(order._id) === String(orderId),
     );
 

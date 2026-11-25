@@ -49,12 +49,18 @@ describe("Testing Repository de Users", () => {
   });
 
   it("Buscar todos los usuarios", async () => {
-    const users = await userRepository.findAll();
+    const result = await userRepository.findAll({
+      page: 1,
+      limit: 100,
+      search: "",
+      role: "",
+    });
 
-    expect(users).to.be.an("array");
-    expect(users.some((user) => String(user._id) === String(userId))).to.equal(
-      true,
-    );
+    expect(result.users).to.be.an("array");
+    expect(result.total).to.be.a("number");
+    expect(
+      result.users.some((user) => String(user._id) === String(userId)),
+    ).to.equal(true);
   });
 
   it("Actualizar un usuario", async () => {

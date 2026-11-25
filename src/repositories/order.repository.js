@@ -1,8 +1,28 @@
 import Order from "../models/order.model.js";
 
 class OrderRepository {
-  async findAll() {
-    return Order.find().populate("customer", "-password").populate("delivery");
+  async findAll({ page = 1, limit = 10, status = "", priority = "" } = {}) {
+    const filters = {};
+
+    if (status) {
+      filters.status = status;
+    }
+
+    if (priority) {
+      filters.priority = priority;
+    }
+
+    const [orders, total] = await Promise.all([
+      Order.find(filters)
+        .populate("customer", "-password")
+        .populate("delivery")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Order.countDocuments(filters),
+    ]);
+
+    return { orders, total };
   }
 
   async findById(orderId) {

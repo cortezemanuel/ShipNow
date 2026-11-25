@@ -1,8 +1,38 @@
 import Delivery from "../models/delivery.model.js";
 
 class DeliveryRepository {
-  async findAll() {
-    return Delivery.find().populate("order").populate("driver", "-password");
+  async findAll({
+    page = 1,
+    limit = 10,
+    status = "",
+    priority = "",
+    driver = "",
+  } = {}) {
+    const filters = {};
+
+    if (status) {
+      filters.status = status;
+    }
+
+    if (priority) {
+      filters.priority = priority;
+    }
+
+    if (driver) {
+      filters.driver = driver;
+    }
+
+    const [deliveries, total] = await Promise.all([
+      Delivery.find(filters)
+        .populate("order")
+        .populate("driver", "-password")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Delivery.countDocuments(filters),
+    ]);
+
+    return { deliveries, total };
   }
 
   async findById(deliveryId) {
@@ -24,6 +54,7 @@ class DeliveryRepository {
       .populate("order")
       .populate("driver", "-password");
   }
+
   async insertMany(deliveries, session = null) {
     return Delivery.insertMany(deliveries, session ? { session } : {});
   }

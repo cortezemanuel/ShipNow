@@ -6,8 +6,52 @@ import { USER_ROLES, DOCUMENT_TYPES } from "../constants/index.js";
 import logger from "../utils/logger.js";
 
 class UserService {
-  async findAll() {
-    return userRepository.findAll();
+  async findAll({ page = 1, limit = 10, search = "", role = "" } = {}) {
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+
+    if (!Number.isInteger(parsedPage) || parsedPage < 1) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "La página debe ser un entero mayor a cero",
+      );
+    }
+
+    if (
+      !Number.isInteger(parsedLimit) ||
+      parsedLimit < 1 ||
+      parsedLimit > 100
+    ) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "El límite debe ser un entero entre 1 y 100",
+      );
+    }
+
+    const normalizedSearch = String(search).trim();
+    const normalizedRole = String(role).trim();
+
+    if (normalizedRole && !Object.values(USER_ROLES).includes(normalizedRole)) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "El rol proporcionado no es válido",
+      );
+    }
+
+    const { users, total } = await userRepository.findAll({
+      page: parsedPage,
+      limit: parsedLimit,
+      search: normalizedSearch,
+      role: normalizedRole,
+    });
+
+    return {
+      users,
+      total,
+      page: parsedPage,
+      limit: parsedLimit,
+      totalPages: Math.ceil(total / parsedLimit),
+    };
   }
 
   async findById(id) {
@@ -92,6 +136,7 @@ class UserService {
         userId,
         documentData,
       );
+
       if (!updatedUser) {
         throw new AppError("USER_NOT_FOUND");
       }

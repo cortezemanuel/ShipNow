@@ -3,8 +3,18 @@ import deliveryService from "../services/delivery.service.js";
 class DeliveryController {
   async findAll(req, res, next) {
     try {
-      const deliveries = await deliveryService.findAll();
-      res.json({ status: "success", payload: deliveries });
+      const result = await deliveryService.findAll(req.query);
+
+      res.json({
+        status: "success",
+        payload: result.deliveries,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
     } catch (error) {
       next(error);
     }

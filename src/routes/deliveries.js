@@ -36,9 +36,40 @@ const router = Router();
  * @swagger
  * /api/deliveries:
  *   get:
- *     summary: Obtener todas las entregas
+ *     summary: Obtener entregas con paginación y filtros
  *     description: Devuelve las entregas con sus referencias de pedido y repartidor.
  *     tags: [Deliveries]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Cantidad de entregas por página
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, assigned, in_transit, delivered]
+ *         description: Filtrar por estado de la entrega
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [low, normal, high]
+ *         description: Filtrar por prioridad
+ *       - in: query
+ *         name: driver
+ *         schema:
+ *           type: string
+ *         description: Filtrar por ID del repartidor
  *     responses:
  *       200:
  *         description: Lista de entregas obtenida correctamente
@@ -54,6 +85,27 @@ const router = Router();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Delivery'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 45
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 5
+ *       400:
+ *         description: Parámetros de consulta inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -110,6 +162,40 @@ router.get("/", deliveryController.findAll);
  */
 router.get("/:id", deliveryController.findById);
 
+/**
+ * @swagger
+ * /api/deliveries/{id}/receipts:
+ *   post:
+ *     summary: Cargar comprobante de entrega
+ *     tags: [Deliveries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - receipt
+ *             properties:
+ *               receipt:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Comprobante cargado correctamente
+ *       400:
+ *         description: Archivo inválido o faltante
+ *       404:
+ *         description: Entrega no encontrada
+ *       500:
+ *         description: Error interno del servidor
+ */
 router.post(
   "/:id/receipts",
   uploadDeliveryReceipt,

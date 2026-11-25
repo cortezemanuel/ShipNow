@@ -3,8 +3,18 @@ import orderService from "../services/order.service.js";
 class OrderController {
   async findAll(req, res, next) {
     try {
-      const orders = await orderService.findAll();
-      res.json({ status: "success", payload: orders });
+      const result = await orderService.findAll(req.query);
+
+      res.json({
+        status: "success",
+        payload: result.orders,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
     } catch (error) {
       next(error);
     }

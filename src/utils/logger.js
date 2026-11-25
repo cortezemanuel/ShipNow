@@ -49,7 +49,7 @@ const errorOnlyFormat = winston.format((info) => {
 
 const logger = winston.createLogger({
   levels,
-  level: config.nodeEnv === "production" ? "info" : "debug",
+  level: config.logLevel,
   format: logFormat,
   transports: [
     new winston.transports.Console({

@@ -3,8 +3,18 @@ import userService from "../services/user.service.js";
 class UserController {
   async findAll(req, res, next) {
     try {
-      const users = await userService.findAll();
-      res.json({ status: "success", payload: users });
+      const result = await userService.findAll(req.query);
+
+      res.json({
+        status: "success",
+        payload: result.users,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
     } catch (error) {
       next(error);
     }

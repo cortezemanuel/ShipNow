@@ -8,22 +8,39 @@ const router = Router();
  * @swagger
  * /api/users:
  *   get:
- *     summary: Obtener todos los usuarios
+ *     summary: Obtener usuarios con paginación y filtros
  *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Cantidad de usuarios por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar por nombre, apellido o email
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *         description: Filtrar por rol
  *     responses:
  *       200:
  *         description: Lista de usuarios obtenida correctamente
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Parámetros de consulta inválidos
  *       500:
  *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/", userController.findAll);
 
@@ -176,9 +193,9 @@ router.post("/", userController.create);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/:id/documents", uploadUserDocument, userController.addDocument);
-
 router.put("/:id", userController.update);
+
+router.post("/:id/documents", uploadUserDocument, userController.addDocument);
 
 /**
  * @swagger

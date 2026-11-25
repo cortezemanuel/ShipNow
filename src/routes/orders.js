@@ -1,6 +1,8 @@
 import { Router } from "express";
 import orderController from "../controllers/order.controller.js";
 
+const router = Router();
+
 /**
  * @swagger
  * components:
@@ -42,15 +44,39 @@ import orderController from "../controllers/order.controller.js";
  *           example: normal
  */
 
-const router = Router();
-
 /**
  * @swagger
  * /api/orders:
  *   get:
- *     summary: Obtener todos los pedidos
+ *     summary: Obtener pedidos con paginación y filtros
  *     description: Devuelve los pedidos con sus referencias de cliente y entrega.
  *     tags: [Orders]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Cantidad de pedidos por página
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [created, assigned, picked_up, in_transit, delivered, cancelled]
+ *         description: Filtrar por estado del pedido
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [low, normal, high]
+ *         description: Filtrar por prioridad
  *     responses:
  *       200:
  *         description: Lista de pedidos obtenida correctamente
@@ -66,6 +92,27 @@ const router = Router();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Order'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 45
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 5
+ *       400:
+ *         description: Parámetros de consulta inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Error interno del servidor
  *         content:

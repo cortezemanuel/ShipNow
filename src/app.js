@@ -10,31 +10,39 @@ import ordersRouter from "./routes/orders.js";
 import deliveriesRouter from "./routes/deliveries.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
+import config from "./config/env.config.js";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get("/api/docs-json", (req, res) => {
-  res.status(200).json(swaggerSpec);
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "ShipNow API funcionando correctamente",
+    environment: config.nodeEnv,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use("/api/products", productsRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/deliveries", deliveriesRouter);
 app.use("/api/users", usersRouter);
-app.use("/api/mocks", mocksRouter);
-app.use("/api/logger", loggerRouter);
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "ShipNow API funcionando correctamente",
-    timestamp: new Date().toISOString(),
+if (config.nodeEnv !== "production") {
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  app.get("/api/docs-json", (req, res) => {
+    res.status(200).json(swaggerSpec);
   });
-});
+
+  app.use("/api/mocks", mocksRouter);
+  app.use("/api/logger", loggerRouter);
+}
 
 app.use((req, res, next) => {
   next(new AppError("ROUTE_NOT_FOUND"));

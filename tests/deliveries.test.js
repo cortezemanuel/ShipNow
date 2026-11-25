@@ -111,11 +111,18 @@ describe("Testing Repository de Deliveries", () => {
   });
 
   it("Buscar todas las entregas", async () => {
-    const deliveries = await deliveryRepository.findAll();
+    const result = await deliveryRepository.findAll({
+      page: 1,
+      limit: 100,
+      status: "",
+      priority: "",
+      driver: "",
+    });
 
-    expect(deliveries).to.be.an("array");
+    expect(result.deliveries).to.be.an("array");
+    expect(result.total).to.be.a("number");
 
-    const deliveryFound = deliveries.find(
+    const deliveryFound = result.deliveries.find(
       (delivery) => String(delivery._id) === String(deliveryId),
     );
 

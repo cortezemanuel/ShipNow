@@ -1,8 +1,34 @@
 import User from "../models/user.model.js";
 
 class UserRepository {
-  async findAll() {
-    return User.find().select("-password");
+  async findAll({ page, limit, search, role }) {
+    const filters = {};
+
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      filters.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+      ];
+    }
+
+    if (role) {
+      filters.role = role;
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(filters)
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      User.countDocuments(filters),
+    ]);
+
+    return { users, total };
   }
 
   async findById(id) {
