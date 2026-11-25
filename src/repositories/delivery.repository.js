@@ -15,6 +15,15 @@ class DeliveryRepository {
     return Delivery.create(deliveryData);
   }
 
+  async addReceipt(deliveryId, receiptData) {
+    return Delivery.findByIdAndUpdate(
+      deliveryId,
+      { $push: { receipts: receiptData } },
+      { new: true, runValidators: true },
+    )
+      .populate("order")
+      .populate("driver", "-password");
+  }
   async insertMany(deliveries, session = null) {
     return Delivery.insertMany(deliveries, session ? { session } : {});
   }

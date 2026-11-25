@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { USER_ROLES } from "../constants/index.js";
+import { USER_ROLES, DOCUMENT_TYPES } from "../constants/index.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -29,11 +29,26 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.USER,
     },
+
     documents: {
       type: [
         {
           name: { type: String },
           reference: { type: String },
+          originalName: { type: String, required: true },
+          fileName: { type: String, required: true },
+          path: { type: String, required: true },
+          mimeType: { type: String, required: true },
+          size: { type: Number, required: true },
+          documentType: {
+            type: String,
+            required: true,
+            enum: [DOCUMENT_TYPES.USER_DOCUMENT, DOCUMENT_TYPES.DRIVER_LICENSE],
+          },
+          uploadedAt: {
+            type: Date,
+            default: Date.now,
+          },
         },
       ],
       default: [],

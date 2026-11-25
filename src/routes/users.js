@@ -1,3 +1,4 @@
+import { uploadUserDocument } from "../middlewares/upload.middleware.js";
 import { Router } from "express";
 import userController from "../controllers/user.controller.js";
 
@@ -175,6 +176,8 @@ router.post("/", userController.create);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+router.post("/:id/documents", uploadUserDocument, userController.addDocument);
+
 router.put("/:id", userController.update);
 
 /**

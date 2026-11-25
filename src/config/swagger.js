@@ -24,6 +24,124 @@ const options = {
       { name: "Mocks", description: "Generación de datos de prueba" },
       { name: "Logger", description: "Pruebas del sistema de logs" },
     ],
+
+    paths: {
+      "/api/users/{id}/documents": {
+        post: {
+          tags: ["Users"],
+          summary: "Cargar documentación de un usuario",
+          description:
+            "Permite cargar un documento o licencia asociado a un usuario.",
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: {
+                type: "string",
+              },
+              description: "ID del usuario",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  required: ["document", "documentType"],
+                  properties: {
+                    document: {
+                      type: "string",
+                      format: "binary",
+                      description: "Archivo PDF, JPG o PNG. Máximo 5 MB.",
+                    },
+                    documentType: {
+                      type: "string",
+                      enum: ["user_document", "driver_license"],
+                      example: "user_document",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Documento cargado correctamente",
+            },
+            400: {
+              description:
+                "Archivo obligatorio, formato o tipo de documento inválido",
+            },
+            404: {
+              description: "Usuario no encontrado",
+            },
+            413: {
+              description: "El archivo supera el tamaño máximo permitido",
+            },
+            500: {
+              description: "Error al almacenar el archivo",
+            },
+          },
+        },
+      },
+      "/api/deliveries/{id}/receipts": {
+        post: {
+          tags: ["Deliveries"],
+          summary: "Cargar comprobante de entrega",
+          description:
+            "Permite asociar un comprobante PDF, JPG o PNG a una entrega.",
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: {
+                type: "string",
+              },
+              description: "ID de la entrega",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  required: ["receipt"],
+                  properties: {
+                    receipt: {
+                      type: "string",
+                      format: "binary",
+                      description: "Comprobante PDF, JPG o PNG. Máximo 5 MB.",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Comprobante cargado correctamente",
+            },
+            400: {
+              description: "Archivo obligatorio o formato inválido",
+            },
+            404: {
+              description: "Entrega no encontrada",
+            },
+            413: {
+              description: "El archivo supera el tamaño máximo permitido",
+            },
+            500: {
+              description: "Error al almacenar el archivo",
+            },
+          },
+        },
+      },
+    },
+
     components: {
       schemas: {
         User: {
@@ -51,6 +169,7 @@ const options = {
               enum: ["admin", "user", "customer", "driver", "store"],
               example: "customer",
             },
+
             documents: {
               type: "array",
               items: {
@@ -58,15 +177,83 @@ const options = {
                 properties: {
                   name: {
                     type: "string",
-                    example: "DNI",
+                    example: "user_document",
                   },
                   reference: {
                     type: "string",
+                    example: "uploads/user-documents/documento.pdf",
+                  },
+                  originalName: {
+                    type: "string",
                     example: "documento.pdf",
+                  },
+                  fileName: {
+                    type: "string",
+                    example: "1795566029380-519249307.pdf",
+                  },
+                  path: {
+                    type: "string",
+                    example: "uploads/user-documents/documento.pdf",
+                  },
+                  mimeType: {
+                    type: "string",
+                    example: "application/pdf",
+                  },
+                  size: {
+                    type: "number",
+                    example: 175852,
+                  },
+                  documentType: {
+                    type: "string",
+                    enum: ["user_document", "driver_license"],
+                    example: "user_document",
+                  },
+                  uploadedAt: {
+                    type: "string",
+                    format: "date-time",
                   },
                 },
               },
             },
+
+            receipts: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  originalName: {
+                    type: "string",
+                    example: "comprobante.pdf",
+                  },
+                  fileName: {
+                    type: "string",
+                    example: "1795566029380-519249307.pdf",
+                  },
+                  path: {
+                    type: "string",
+                    example: "uploads/delivery-receipts/comprobante.pdf",
+                  },
+                  mimeType: {
+                    type: "string",
+                    example: "application/pdf",
+                  },
+                  size: {
+                    type: "number",
+                    example: 175852,
+                  },
+                  documentType: {
+                    type: "string",
+                    enum: ["delivery_proof"],
+                    example: "delivery_proof",
+                  },
+                  uploadedAt: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                },
+              },
+            },
+
             createdAt: {
               type: "string",
               format: "date-time",

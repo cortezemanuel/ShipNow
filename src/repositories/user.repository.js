@@ -28,6 +28,14 @@ class UserRepository {
     return User.findByIdAndDelete(id).select("-password");
   }
 
+  async addDocument(userId, documentData) {
+    return User.findByIdAndUpdate(
+      userId,
+      { $push: { documents: documentData } },
+      { new: true, runValidators: true },
+    ).select("-password");
+  }
+
   async insertMany(users, session = null) {
     return User.insertMany(users, session ? { session } : {});
   }

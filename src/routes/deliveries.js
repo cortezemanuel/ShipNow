@@ -1,5 +1,6 @@
 import { Router } from "express";
 import deliveryController from "../controllers/delivery.controller.js";
+import { uploadDeliveryReceipt } from "../middlewares/upload.middleware.js";
 
 /**
  * @swagger
@@ -108,6 +109,12 @@ router.get("/", deliveryController.findAll);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/:id", deliveryController.findById);
+
+router.post(
+  "/:id/receipts",
+  uploadDeliveryReceipt,
+  deliveryController.addReceipt,
+);
 
 /**
  * @swagger

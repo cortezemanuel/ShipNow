@@ -27,6 +27,23 @@ class DeliveryController {
       next(error);
     }
   }
+
+  async addReceipt(req, res, next) {
+    try {
+      const delivery = await deliveryService.addReceipt(
+        req.params.id,
+        req.file,
+      );
+
+      res.status(201).json({
+        status: "success",
+        message: "Comprobante cargado correctamente",
+        payload: delivery,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new DeliveryController();
