@@ -31,6 +31,27 @@ const deliverySchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    tracking: {
+      type: [
+        {
+          status: {
+            type: String,
+            enum: Object.values(DELIVERY_STATUS),
+            required: true,
+          },
+          description: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          timestamp: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
     receipts: {
       type: [
         {

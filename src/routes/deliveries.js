@@ -164,6 +164,44 @@ router.get("/:id", deliveryController.findById);
 
 /**
  * @swagger
+ * /api/deliveries/{id}/status:
+ *   patch:
+ *     summary: Actualizar el estado de una entrega
+ *     tags: [Deliveries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Identificador de la entrega
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [assigned, in_transit, delivered]
+ *                 example: in_transit
+ *     responses:
+ *       200:
+ *         description: Estado actualizado correctamente
+ *       400:
+ *         description: Estado o transición inválida
+ *       404:
+ *         description: Entrega no encontrada
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch("/:id/status", deliveryController.updateStatus);
+
+/**
+ * @swagger
  * /api/deliveries/{id}/receipts:
  *   post:
  *     summary: Cargar comprobante de entrega

@@ -55,6 +55,27 @@ class DeliveryRepository {
       .populate("driver", "-password");
   }
 
+  async updateStatus(deliveryId, status, trackingEntry, dates = {}) {
+    return Delivery.findByIdAndUpdate(
+      deliveryId,
+      {
+        $set: {
+          status,
+          ...dates,
+        },
+        $push: {
+          tracking: trackingEntry,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    )
+      .populate("order")
+      .populate("driver", "-password");
+  }
+
   async insertMany(deliveries, session = null) {
     return Delivery.insertMany(deliveries, session ? { session } : {});
   }

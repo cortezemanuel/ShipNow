@@ -272,4 +272,99 @@ describe("Testing endpoints de Deliveries", () => {
     expect(response.body.status).to.equal("error");
     expect(response.body.code).to.equal("DELIVERY_NOT_FOUND");
   });
+
+  it("Actualizar los estados de una entrega y registrar su tracking", async () => {
+    const createResponse = await request(app)
+      .post("/api/deliveries")
+      .send({
+        order: String(orderId),
+        driver: String(driverId),
+      });
+
+    expect(createResponse.status).to.equal(201);
+
+    const newDeliveryId = createResponse.body.payload._id;
+
+    const assignedResponse = await request(app)
+      .patch(`/api/deliveries/${newDeliveryId}/status`)
+      .send({ status: "assigned" });
+
+    expect(assignedResponse.status).to.equal(200);
+    expect(assignedResponse.body.payload.status).to.equal("assigned");
+    expect(assignedResponse.body.payload.tracking).to.have.length(1);
+
+    let order = await Order.findById(orderId);
+    expect(order.status).to.equal("assigned");
+
+    const inTransitResponse = await request(app)
+      .patch(`/api/deliveries/${newDeliveryId}/status`)
+      .send({ status: "in_transit" });
+
+    expect(inTransitResponse.status).to.equal(200);
+    expect(inTransitResponse.body.payload.status).to.equal("in_transit");
+    expect(inTransitResponse.body.payload.tracking).to.have.length(2);
+
+    order = await Order.findById(orderId);
+    expect(order.status).to.equal("in_transit");
+
+    const deliveredResponse = await request(app)
+      .patch(`/api/deliveries/${newDeliveryId}/status`)
+      .send({ status: "delivered" });
+
+    expect(deliveredResponse.status).to.equal(200);
+    expect(deliveredResponse.body.payload.status).to.equal("delivered");
+    expect(deliveredResponse.body.payload.tracking).to.have.length(3);
+    expect(deliveredResponse.body.payload.deliveredAt).to.exist;
+
+    order = await Order.findById(orderId);
+    expect(order.status).to.equal("delivered");
+  });
+
+  it("Rechazar una transición de estado inválida", async () => {
+    const response = await request(app)
+      .patch(`/api/deliveries/${deliveryId}/status`)
+      .send({ status: "delivered" });
+
+    expect(response.status).to.equal(400);
+    expect(response.body.status).to.equal("error");
+    expect(response.body.code).to.equal("INVALID_STATUS");
+  });
+
+  it("Rechazar un estado inexistente", async () => {
+    const response = await request(app)
+      .patch(`/api/deliveries/${deliveryId}/status`)
+      .send({ status: "cancelled" });
+
+    expect(response.status).to.equal(400);
+    expect(response.body.status).to.equal("error");
+    expect(response.body.code).to.equal("INVALID_STATUS");
+  });
+
+  it("Rechazar la actualización de una entrega inexistente", async () => {
+    const response = await request(app)
+      .patch(`/api/deliveries/${nonexistentId}/status`)
+      .send({ status: "assigned" });
+
+    expect(response.status).to.equal(404);
+    expect(response.body.status).to.equal("error");
+    expect(response.body.code).to.equal("DELIVERY_NOT_FOUND");
+  });
+
+  it("Rechazar la asignación de una entrega sin repartidor", async () => {
+    const createResponse = await request(app)
+      .post("/api/deliveries")
+      .send({
+        order: String(orderWithoutDriverId),
+      });
+
+    expect(createResponse.status).to.equal(201);
+
+    const response = await request(app)
+      .patch(`/api/deliveries/${createResponse.body.payload._id}/status`)
+      .send({ status: "assigned" });
+
+    expect(response.status).to.equal(404);
+    expect(response.body.status).to.equal("error");
+    expect(response.body.code).to.equal("DELIVERY_DRIVER_NOT_FOUND");
+  });
 });

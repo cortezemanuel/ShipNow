@@ -8,6 +8,7 @@ import {
   DOCUMENT_TYPES,
   DELIVERY_STATUS,
   DELIVERY_PRIORITY,
+  ORDER_STATUS,
 } from "../constants/index.js";
 import logger from "../utils/logger.js";
 
@@ -180,6 +181,74 @@ class DeliveryService {
 
       throw error;
     }
+  }
+
+  async updateStatus(deliveryId, newStatus) {
+    const delivery = await this.findById(deliveryId);
+
+    const transitions = {
+      [DELIVERY_STATUS.PENDING]: [DELIVERY_STATUS.ASSIGNED],
+      [DELIVERY_STATUS.ASSIGNED]: [DELIVERY_STATUS.IN_TRANSIT],
+      [DELIVERY_STATUS.IN_TRANSIT]: [DELIVERY_STATUS.DELIVERED],
+    };
+
+    if (!Object.values(DELIVERY_STATUS).includes(newStatus)) {
+      throw new AppError("INVALID_STATUS");
+    }
+
+    if (!transitions[delivery.status]?.includes(newStatus)) {
+      throw new AppError("INVALID_STATUS");
+    }
+
+    if (newStatus === DELIVERY_STATUS.ASSIGNED && !delivery.driver) {
+      throw new AppError(
+        "DELIVERY_DRIVER_NOT_FOUND",
+        "No se puede asignar una entrega sin repartidor",
+      );
+    }
+
+    const orderStatuses = {
+      [DELIVERY_STATUS.ASSIGNED]: ORDER_STATUS.ASSIGNED,
+      [DELIVERY_STATUS.IN_TRANSIT]: ORDER_STATUS.IN_TRANSIT,
+      [DELIVERY_STATUS.DELIVERED]: ORDER_STATUS.DELIVERED,
+    };
+
+    const dates = {};
+
+    if (newStatus === DELIVERY_STATUS.ASSIGNED) {
+      dates.assignedAt = new Date();
+    }
+
+    if (newStatus === DELIVERY_STATUS.DELIVERED) {
+      dates.deliveredAt = new Date();
+    }
+
+    const descriptions = {
+      [DELIVERY_STATUS.ASSIGNED]: "Entrega asignada a un repartidor",
+      [DELIVERY_STATUS.IN_TRANSIT]: "El pedido está en camino",
+      [DELIVERY_STATUS.DELIVERED]: "Pedido entregado correctamente",
+    };
+
+    const trackingEntry = {
+      status: newStatus,
+      description: descriptions[newStatus],
+      timestamp: new Date(),
+    };
+
+    const updatedDelivery = await deliveryRepository.updateStatus(
+      deliveryId,
+      newStatus,
+      trackingEntry,
+      dates,
+    );
+
+    await orderRepository.updateDelivery(
+      delivery.order._id,
+      deliveryId,
+      orderStatuses[newStatus],
+    );
+
+    return updatedDelivery;
   }
 
   async insertMany(deliveries) {

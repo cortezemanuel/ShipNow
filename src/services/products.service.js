@@ -3,8 +3,40 @@ import AppError from "../utils/errors.js";
 import { PRODUCT_STATUS } from "../constants/index.js";
 
 class ProductsService {
-  async findAll() {
-    return productsRepo.findAll();
+  async findAll({ page = 1, limit = 10 } = {}) {
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+
+    if (!Number.isInteger(parsedPage) || parsedPage < 1) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "La página debe ser un entero mayor a cero",
+      );
+    }
+
+    if (
+      !Number.isInteger(parsedLimit) ||
+      parsedLimit < 1 ||
+      parsedLimit > 100
+    ) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "El límite debe ser un entero entre 1 y 100",
+      );
+    }
+
+    const { products, total } = await productsRepo.findAll({
+      page: parsedPage,
+      limit: parsedLimit,
+    });
+
+    return {
+      products,
+      total,
+      page: parsedPage,
+      limit: parsedLimit,
+      totalPages: Math.ceil(total / parsedLimit),
+    };
   }
 
   async findById(id) {

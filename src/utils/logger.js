@@ -43,38 +43,46 @@ const logFormat = winston.format.combine(
     return `${timestamp} [${level}] ${message}${extra}`;
   }),
 );
+
 const errorOnlyFormat = winston.format((info) => {
   return ["error", "fatal"].includes(info.level) ? info : false;
 });
 
-const logger = winston.createLogger({
-  levels,
-  level: config.logLevel,
-  format: logFormat,
-  transports: [
+const transports = [
+  new DailyRotateFile({
+    dirname: logsDirectory,
+    filename: "combined-%DATE%.log",
+    datePattern: "YYYY-MM-DD",
+    maxSize: "10m",
+    maxFiles: "14d",
+    level: "debug",
+  }),
+  new winston.transports.File({
+    filename: path.join(logsDirectory, "error.log"),
+    level: "debug",
+    format: winston.format.combine(errorOnlyFormat(), logFormat),
+    maxsize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    tailable: true,
+  }),
+];
+
+if (config.nodeEnv === "development") {
+  transports.push(
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize({ all: true }),
         logFormat,
       ),
     }),
-    new DailyRotateFile({
-      dirname: logsDirectory,
-      filename: "combined-%DATE%.log",
-      datePattern: "YYYY-MM-DD",
-      maxSize: "10m",
-      maxFiles: "14d",
-      level: "debug",
-    }),
-    new winston.transports.File({
-      filename: path.join(logsDirectory, "error.log"),
-      level: "debug",
-      format: winston.format.combine(errorOnlyFormat(), logFormat),
-      maxsize: 10 * 1024 * 1024,
-      maxFiles: 5,
-      tailable: true,
-    }),
-  ],
+  );
+}
+
+const logger = winston.createLogger({
+  levels,
+  level: config.logLevel,
+  format: logFormat,
+  transports,
 });
 
 export default logger;

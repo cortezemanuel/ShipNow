@@ -108,7 +108,6 @@ ShipNow/
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
-├── .env.docker
 ├── docker-compose.yml
 ├── Dockerfile
 ├── package.json
@@ -229,16 +228,31 @@ Base URL: `/api/orders`
 
 Base URL: `/api/deliveries`
 
-| Método | Endpoint                       | Descripción                      |
-| ------ | ------------------------------ | -------------------------------- |
-| GET    | `/api/deliveries`              | Obtiene las entregas.            |
-| GET    | `/api/deliveries/:id`          | Obtiene una entrega por ID.      |
-| POST   | `/api/deliveries`              | Crea una entrega.                |
-| POST   | `/api/deliveries/:id/receipts` | Carga un comprobante de entrega. |
+| Método | Endpoint                       | Descripción                                                   |
+| ------ | ------------------------------ | ------------------------------------------------------------- |
+| GET    | `/api/deliveries`              | Obtiene las entregas.                                         |
+| GET    | `/api/deliveries/:id`          | Obtiene una entrega por ID.                                   |
+| POST   | `/api/deliveries`              | Crea una entrega.                                             |
+| POST   | `/api/deliveries/:id/receipts` | Carga un comprobante de entrega.                              |
+| PATCH  | `/api/deliveries/:id/status`   | Actualiza el estado y registra el seguimiento de una entrega. |
+
+### Seguimiento de entregas
+
+El endpoint `PATCH /api/deliveries/:id/status` permite actualizar el estado de una entrega.
+
+Los estados admitidos para el seguimiento son:
+
+- `assigned`
+- `in_transit`
+- `delivered`
+
+Cada actualización registra el nuevo estado, una descripción y la fecha y hora del evento en el historial de tracking.
+
+Los cambios de estado también actualizan el estado correspondiente del pedido asociado.
 
 ## Paginación y filtros
 
-Los endpoints de usuarios, pedidos y entregas incorporan paginación para optimizar las consultas y evitar recuperar todos los registros en una única solicitud.
+Los endpoints de productos, usuarios, pedidos y entregas incorporan paginación para optimizar las consultas y evitar recuperar todos los registros en una única solicitud.
 
 ### Parámetros disponibles
 
@@ -255,6 +269,13 @@ Los endpoints de usuarios, pedidos y entregas incorporan paginación para optimi
 El límite máximo permitido es de 100 registros por página.
 
 ### Ejemplos de consultas
+
+Productos:
+
+```http
+GET /api/products?page=1&limit=10
+GET /api/products?page=2&limit=5
+```
 
 Usuarios:
 
@@ -280,26 +301,18 @@ GET /api/deliveries?page=1&limit=10&status=pending&priority=normal
 
 ### Respuesta de paginación
 
-Las respuestas incluyen un objeto `pagination` con la cantidad total de registros, página actual, límite y cantidad total de páginas.
+Las respuestas incluyen los registros y los siguientes datos:
 
-Ejemplo:
+- `total`: cantidad total de registros.
+- `page`: página actual.
+- `limit`: cantidad de registros por página.
+- `totalPages`: cantidad total de páginas.
 
-```json
-{
-  "status": "success",
-  "payload": [],
-  "pagination": {
-    "total": 42,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 5
-  }
-}
-```
-
-Las consultas utilizan filtros en MongoDB, operaciones `skip()` y `limit()`, y conteo de registros mediante `countDocuments()`.
+Las consultas utilizan filtros en MongoDB, operaciones `skip()` y `limit()`, y conteo mediante `countDocuments()`.
 
 Cuando corresponde, las consultas de obtención de datos y conteo se ejecutan en paralelo mediante `Promise.all()`.
+
+Los valores inválidos de página o límite generan una respuesta HTTP 400.
 
 ## Generación de datos de prueba (Mocking)
 
@@ -421,23 +434,24 @@ Cada código tiene asociado un código HTTP y un mensaje descriptivo.
 
 Entre los errores contemplados se encuentran:
 
-| Código                     | HTTP | Descripción                    |
-| -------------------------- | ---: | ------------------------------ |
-| `USER_NOT_FOUND`           |  404 | Usuario no encontrado.         |
-| `EMAIL_ALREADY_REGISTERED` |  409 | Email ya registrado.           |
-| `PRODUCT_NOT_FOUND`        |  404 | Producto no encontrado.        |
-| `ORDER_NOT_FOUND`          |  404 | Pedido no encontrado.          |
-| `DELIVERY_NOT_FOUND`       |  404 | Entrega no encontrada.         |
-| `VALIDATION_ERROR`         |  400 | Error de validación.           |
-| `DUPLICATE_KEY`            |  409 | Recurso duplicado.             |
-| `ROUTE_NOT_FOUND`          |  404 | Ruta inexistente.              |
-| `INTERNAL_SERVER_ERROR`    |  500 | Error interno del servidor.    |
-| `FILE_REQUIRED`            |  400 | Archivo requerido.             |
-| `FILE_INVALID_TYPE`        |  400 | Tipo de archivo inválido.      |
-| `FILE_TOO_LARGE`           |  400 | Archivo demasiado grande.      |
-| `FILE_UNEXPECTED_FIELD`    |  400 | Campo de archivo inesperado.   |
-| `INVALID_DOCUMENT_TYPE`    |  400 | Tipo de documento inválido.    |
-| `FILE_STORAGE_ERROR`       |  500 | Error al almacenar el archivo. |
+| Código                     | HTTP | Descripción                                           |
+| -------------------------- | ---: | ----------------------------------------------------- |
+| `USER_NOT_FOUND`           |  404 | Usuario no encontrado.                                |
+| `EMAIL_ALREADY_REGISTERED` |  409 | Email ya registrado.                                  |
+| `PRODUCT_NOT_FOUND`        |  404 | Producto no encontrado.                               |
+| `ORDER_NOT_FOUND`          |  404 | Pedido no encontrado.                                 |
+| `DELIVERY_NOT_FOUND`       |  404 | Entrega no encontrada.                                |
+| `VALIDATION_ERROR`         |  400 | Error de validación.                                  |
+| `DUPLICATE_KEY`            |  409 | Recurso duplicado.                                    |
+| `ROUTE_NOT_FOUND`          |  404 | Ruta inexistente.                                     |
+| `PAYLOAD_TOO_LARGE`        |  413 | El cuerpo de la solicitud supera el tamaño permitido. |
+| `INTERNAL_SERVER_ERROR`    |  500 | Error interno del servidor.                           |
+| `FILE_REQUIRED`            |  400 | Archivo requerido.                                    |
+| `FILE_INVALID_TYPE`        |  400 | Tipo de archivo inválido.                             |
+| `FILE_TOO_LARGE`           |  413 | Archivo demasiado grande.                             |
+| `FILE_UNEXPECTED_FIELD`    |  400 | Campo de archivo inesperado.                          |
+| `INVALID_DOCUMENT_TYPE`    |  400 | Tipo de documento inválido.                           |
+| `FILE_STORAGE_ERROR`       |  500 | Error al almacenar el archivo.                        |
 
 ### Middleware global
 
@@ -686,24 +700,24 @@ La API y el endpoint Health Check permanecen disponibles.
 
 Se establecieron límites de tamaño para los cuerpos de las solicitudes:
 
-- JSON: máximo 1 MB.
+- JSON: máximo 1 MB. Si se supera este límite, la API responde con HTTP 413 (`PAYLOAD_TOO_LARGE`).
 - URL encoded: máximo 1 MB.
-- Archivos: sujetos a los límites configurados en Multer.
+- Archivos: sujetos a los límites configurados en Multer. Si se supera el tamaño máximo permitido, la API responde con HTTP 413 (`FILE_TOO_LARGE`).
 
-Estas restricciones ayudan a evitar solicitudes con payloads excesivamente grandes.
+Estas restricciones ayudan a evitar solicitudes con payloads excesivamente grandes y permiten gestionar los errores de tamaño mediante el middleware centralizado.
 
 ## Docker y despliegue
 
-El proyecto incorpora Docker para ejecutar la API en un entorno aislado y reproducible.
+El proyecto incorpora Docker y Docker Compose para ejecutar la API y MongoDB en un entorno aislado y reproducible.
 
-La aplicación utiliza una imagen basada en Node.js 22 Alpine.
+La imagen de la API utiliza Node.js 22 Alpine y una construcción multi-stage para separar la instalación de dependencias de la etapa de ejecución.
 
 ### Archivos de Docker
 
-- `Dockerfile`: define la imagen de la API.
+- `Dockerfile`: define la construcción multi-stage de la API.
 - `.dockerignore`: excluye archivos innecesarios y sensibles del contexto de construcción.
-- `docker-compose.yml`: configura el servicio, los puertos, las variables de entorno y los volúmenes.
-- `.env.docker`: contiene las variables necesarias para ejecutar el contenedor y se mantiene fuera del repositorio.
+- `docker-compose.yml`: configura la API, MongoDB, las dependencias entre servicios y los volúmenes.
+- `.env.docker`: contiene las variables necesarias para ejecutar la API y se mantiene fuera del repositorio.
 
 ### Configuración del entorno Docker
 
@@ -715,19 +729,29 @@ MONGODB_URI=tu_uri_de_mongodb
 LOG_LEVEL=info
 ```
 
-La variable `NODE_ENV` se establece en `production` desde Docker Compose.
+En Docker Compose, la conexión a MongoDB se configura mediante la dirección interna del servicio `mongo`.
 
-El archivo `.env.docker` no debe subirse al repositorio porque contiene información sensible.
+La variable `NODE_ENV` se establece en `production`.
+
+El archivo `.env.docker` no debe subirse al repositorio porque puede contener información sensible.
 
 ### Construcción de la imagen
 
-Desde la raíz del proyecto:
+Para construir la imagen de la API:
 
 ```powershell
 docker compose build
 ```
 
-### Iniciar el contenedor
+También se puede construir directamente:
+
+```powershell
+docker build -t shipnow-api .
+```
+
+### Iniciar los servicios
+
+Para iniciar la API y MongoDB:
 
 ```powershell
 docker compose up -d
@@ -738,6 +762,8 @@ docker compose up -d
 ```powershell
 docker compose ps
 ```
+
+Los servicios disponen de healthchecks para verificar su estado. La API espera a que MongoDB se encuentre saludable antes de iniciar.
 
 ### Consultar los logs
 
@@ -751,25 +777,41 @@ Para consultar los últimos registros:
 docker compose logs --tail=50 shipnow
 ```
 
-### Reiniciar el servicio
+Los archivos de logging se almacenan en `/app/logs`.
+
+### Reiniciar los servicios
 
 ```powershell
-docker compose restart shipnow
+docker compose restart
 ```
 
-### Detener los contenedores
+### Detener los servicios
 
 ```powershell
 docker compose down
 ```
 
-Este comando detiene y elimina los contenedores y la red del proyecto, pero conserva los volúmenes nombrados.
+Este comando detiene y elimina los contenedores y la red, pero conserva los volúmenes nombrados.
 
-No utilizar `docker compose down -v` si se desea conservar los archivos almacenados.
+No utilizar `docker compose down -v` si se desea conservar la información almacenada.
+
+### Ejecución independiente con Docker
+
+También es posible construir y ejecutar únicamente la API:
+
+```powershell
+docker build -t shipnow-api .
+```
+
+```powershell
+docker run -d --name shipnow-api -p 3000:3000 --env-file .env.docker -e NODE_ENV=production -v shipnow-uploads:/app/uploads -v shipnow-logs:/app/logs shipnow-api
+```
+
+En esta modalidad, la variable `MONGODB_URI` debe apuntar a una instancia de MongoDB accesible desde el contenedor, como MongoDB Atlas.
 
 ### Acceso a la API
 
-Una vez iniciado el contenedor, la API queda disponible en:
+Una vez iniciados los servicios, la API queda disponible en:
 
 ```text
 http://localhost:3000
@@ -781,58 +823,90 @@ El estado de la aplicación puede verificarse mediante:
 http://localhost:3000/api/health
 ```
 
-### Base de datos
+### Base de datos MongoDB
 
-La aplicación se conecta a MongoDB Atlas mediante la variable `MONGODB_URI`.
+Docker Compose incluye un servicio MongoDB basado en MongoDB 7.
 
-No es necesario ejecutar MongoDB dentro de Docker, ya que la base de datos se encuentra alojada externamente.
+La instancia utiliza un Replica Set de un solo nodo (`rs0`), necesario para admitir las transacciones utilizadas por el proceso Seed.
 
-### Persistencia de archivos
+La API se conecta mediante la dirección interna:
 
-Docker utiliza un volumen nombrado para conservar los archivos cargados mediante Multer:
-
-```yaml
-volumes:
-  - shipnow-uploads:/app/uploads
+```text
+mongodb://mongo:27017/shipnow?replicaSet=rs0
 ```
 
-El volumen permite conservar los archivos aunque se reinicie o se recree el contenedor.
+MongoDB dispone de un healthcheck y utiliza un volumen nombrado para conservar los datos.
 
-La persistencia fue comprobada mediante:
+### Persistencia de datos
 
-1. La carga de un archivo PDF.
-2. La verificación de su existencia dentro del contenedor.
-3. El reinicio del servicio.
-4. Una nueva verificación del archivo después del reinicio.
+Docker Compose configura tres volúmenes nombrados:
 
-### Verificación de archivos dentro del contenedor
+| Volumen              | Directorio     | Contenido                           |
+| -------------------- | -------------- | ----------------------------------- |
+| `shipnow-mongo-data` | `/data/db`     | Datos de MongoDB.                   |
+| `shipnow-uploads`    | `/app/uploads` | Documentos y comprobantes cargados. |
+| `shipnow-logs`       | `/app/logs`    | Archivos de logging.                |
 
-Para consultar los documentos de usuarios:
+Los volúmenes permiten conservar los datos aunque se reinicien o recreen los contenedores.
 
-```powershell
-docker compose exec shipnow sh -c "ls -lh /app/uploads/user-documents"
-```
+La persistencia de MongoDB, archivos subidos y logs fue comprobada mediante pruebas de reinicio de los servicios.
 
-Para consultar los comprobantes de entregas:
+### Usuario y permisos
 
-```powershell
-docker compose exec shipnow sh -c "ls -lh /app/uploads/delivery-receipts"
-```
+La imagen ejecuta la aplicación utilizando el usuario no privilegiado `node`.
+
+Los directorios de uploads y logs cuentan con permisos para permitir la escritura de archivos durante la ejecución.
+
+### Healthchecks
+
+Se implementan controles de salud para ambos servicios:
+
+- MongoDB verifica el estado del Replica Set.
+- La API consulta el endpoint `/api/health`.
+
+Docker Compose utiliza la condición `service_healthy` para esperar a que MongoDB esté disponible antes de iniciar la API.
 
 ## Pruebas automatizadas
 
-El proyecto utiliza Mocha, Chai y Supertest para verificar el funcionamiento de la API mediante pruebas unitarias y funcionales.
+El proyecto utiliza Mocha, Chai y Supertest para verificar el funcionamiento de la API mediante pruebas automatizadas.
+
+### Configuración del entorno de testing
+
+Las pruebas utilizan una base de datos independiente de la utilizada en desarrollo y producción.
+
+El repositorio incluye `.env.test.example` como referencia para configurar el entorno de pruebas.
+
+Para crear el archivo local `.env.test`, ejecutar en PowerShell:
+
+```powershell
+Copy-Item .env.test.example .env.test
+```
+
+La configuración de ejemplo utiliza una instancia MongoDB configurada como Replica Set, necesaria para ejecutar las pruebas que utilizan transacciones.
+
+El archivo `.env.test` contiene variables locales y no debe subirse al repositorio.
+
+### Ejecutar las pruebas
 
 Para ejecutar la suite completa:
 
-```bash
+```powershell
 npm test
 ```
+
+Para ejecutar específicamente las pruebas del proceso Seed:
+
+```powershell
+npm run test:seed
+```
+
+### Cobertura funcional
 
 La suite incluye pruebas de:
 
 - Health Check.
 - Usuarios.
+- Productos.
 - Pedidos.
 - Entregas.
 - Mocks.
@@ -840,10 +914,11 @@ La suite incluye pruebas de:
 - Logging.
 - Documentación Swagger.
 - Validaciones y manejo de errores.
+- Payloads JSON superiores al límite permitido.
 
 Se verifican respuestas exitosas, códigos HTTP, validaciones y estructura de las respuestas.
 
-En la última ejecución registrada para el proyecto se obtuvieron **63 pruebas aprobadas**.
+En la última ejecución de la suite se obtuvieron **74 pruebas aprobadas**.
 
 ## Seguridad
 

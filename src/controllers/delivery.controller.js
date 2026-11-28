@@ -38,6 +38,22 @@ class DeliveryController {
     }
   }
 
+  async updateStatus(req, res, next) {
+    try {
+      const delivery = await deliveryService.updateStatus(
+        req.params.id,
+        req.body.status,
+      );
+
+      res.json({
+        status: "success",
+        message: "Estado de entrega actualizado correctamente",
+        payload: delivery,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   async addReceipt(req, res, next) {
     try {
       const delivery = await deliveryService.addReceipt(

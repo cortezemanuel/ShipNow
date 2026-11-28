@@ -3,13 +3,12 @@ import productsService from "../services/products.service.js";
 class ProductsController {
   async findAll(req, res, next) {
     try {
-      const products = await productsService.findAll();
-      res.json({ status: "success", payload: products });
+      const result = await productsService.findAll(req.query);
+      res.json({ status: "success", payload: result });
     } catch (error) {
       next(error);
     }
   }
-
   async findById(req, res, next) {
     try {
       const product = await productsService.findById(req.params.id);

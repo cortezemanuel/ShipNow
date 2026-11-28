@@ -26,6 +26,49 @@ const options = {
     ],
 
     paths: {
+      "/api/health": {
+        get: {
+          tags: ["Health"],
+          summary: "Verificar el estado de la API",
+          description: "Devuelve el estado de funcionamiento de ShipNow API.",
+          responses: {
+            200: {
+              description: "API funcionando correctamente",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      status: {
+                        type: "string",
+                        example: "ok",
+                      },
+                      message: {
+                        type: "string",
+                        example: "ShipNow API funcionando correctamente",
+                      },
+                      environment: {
+                        type: "string",
+                        example: "development",
+                      },
+                      uptime: {
+                        type: "number",
+                        example: 125.45,
+                      },
+                      timestamp: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2026-11-28T12:00:00.000Z",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
       "/api/users/{id}/documents": {
         post: {
           tags: ["Users"],
@@ -86,6 +129,59 @@ const options = {
           },
         },
       },
+
+      "/api/deliveries/{id}/status": {
+        patch: {
+          tags: ["Deliveries"],
+          summary: "Actualizar el estado de una entrega",
+          description:
+            "Actualiza el estado de una entrega, sincroniza el pedido asociado y registra el movimiento en el historial de tracking.",
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: {
+                type: "string",
+              },
+              description: "ID de la entrega",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["status"],
+                  properties: {
+                    status: {
+                      type: "string",
+                      enum: ["assigned", "in_transit", "delivered"],
+                      example: "in_transit",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Estado actualizado correctamente",
+            },
+            400: {
+              description: "Estado o transición inválida",
+            },
+            404: {
+              description: "Entrega no encontrada",
+            },
+            500: {
+              description: "Error interno del servidor",
+            },
+          },
+        },
+      },
+
       "/api/deliveries/{id}/receipts": {
         post: {
           tags: ["Deliveries"],
@@ -207,44 +303,6 @@ const options = {
                     type: "string",
                     enum: ["user_document", "driver_license"],
                     example: "user_document",
-                  },
-                  uploadedAt: {
-                    type: "string",
-                    format: "date-time",
-                  },
-                },
-              },
-            },
-
-            receipts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  originalName: {
-                    type: "string",
-                    example: "comprobante.pdf",
-                  },
-                  fileName: {
-                    type: "string",
-                    example: "1795566029380-519249307.pdf",
-                  },
-                  path: {
-                    type: "string",
-                    example: "uploads/delivery-receipts/comprobante.pdf",
-                  },
-                  mimeType: {
-                    type: "string",
-                    example: "application/pdf",
-                  },
-                  size: {
-                    type: "number",
-                    example: 175852,
-                  },
-                  documentType: {
-                    type: "string",
-                    enum: ["delivery_proof"],
-                    example: "delivery_proof",
                   },
                   uploadedAt: {
                     type: "string",
@@ -436,6 +494,7 @@ const options = {
             },
           },
         },
+
         Delivery: {
           type: "object",
           properties: {
@@ -474,6 +533,64 @@ const options = {
               enum: ["low", "normal", "high"],
               example: "normal",
             },
+            tracking: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  status: {
+                    type: "string",
+                    enum: ["pending", "assigned", "in_transit", "delivered"],
+                    example: "in_transit",
+                  },
+                  description: {
+                    type: "string",
+                    example: "La entrega está en camino",
+                  },
+                  timestamp: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                },
+              },
+            },
+            receipts: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  originalName: {
+                    type: "string",
+                    example: "comprobante.pdf",
+                  },
+                  fileName: {
+                    type: "string",
+                    example: "1795566029380-519249307.pdf",
+                  },
+                  path: {
+                    type: "string",
+                    example: "uploads/delivery-receipts/comprobante.pdf",
+                  },
+                  mimeType: {
+                    type: "string",
+                    example: "application/pdf",
+                  },
+                  size: {
+                    type: "number",
+                    example: 175852,
+                  },
+                  documentType: {
+                    type: "string",
+                    enum: ["delivery_proof"],
+                    example: "delivery_proof",
+                  },
+                  uploadedAt: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                },
+              },
+            },
             assignedAt: {
               type: "string",
               format: "date-time",
@@ -494,6 +611,7 @@ const options = {
             },
           },
         },
+
         ErrorResponse: {
           type: "object",
           required: ["status", "message", "code"],

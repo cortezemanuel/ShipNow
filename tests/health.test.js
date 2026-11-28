@@ -23,4 +23,18 @@ describe("Testing endpoint Health", () => {
     expect(response.body).to.have.property("message", "Ruta no encontrada");
     expect(response.body).to.have.property("code", "ROUTE_NOT_FOUND");
   });
+
+  it("Debe responder 413 cuando el JSON supera 1 MB", async () => {
+    const largePayload = {
+      data: "a".repeat(1024 * 1024 + 100),
+    };
+
+    const response = await request(app)
+      .post("/api/products")
+      .send(largePayload);
+
+    expect(response.status).to.equal(413);
+    expect(response.body).to.have.property("status", "error");
+    expect(response.body).to.have.property("code", "PAYLOAD_TOO_LARGE");
+  });
 });

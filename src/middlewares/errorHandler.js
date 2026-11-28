@@ -4,7 +4,9 @@ import logger from "../utils/logger.js";
 const errorHandler = (error, req, res, next) => {
   let errorCode = error.code;
 
-  if (!ERROR_DICTIONARY[errorCode]) {
+  if (error.type === "entity.too.large" || error.status === 413) {
+    errorCode = "PAYLOAD_TOO_LARGE";
+  } else if (!ERROR_DICTIONARY[errorCode]) {
     if (error.name === "ValidationError" || error.name === "CastError") {
       errorCode = "VALIDATION_ERROR";
     } else if (error.code === 11000) {

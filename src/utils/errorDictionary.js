@@ -111,6 +111,10 @@ const ERROR_DICTIONARY = Object.freeze({
     statusCode: 500,
     message: "No se pudo almacenar el archivo",
   },
+  PAYLOAD_TOO_LARGE: {
+    statusCode: 413,
+    message: "El cuerpo de la solicitud supera el tamaño máximo permitido",
+  },
   INTERNAL_SERVER_ERROR: {
     statusCode: 500,
     message: "Error interno del servidor",

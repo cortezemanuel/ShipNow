@@ -2,11 +2,20 @@ import Product from "../models/product.model.js";
 import { PRODUCT_STATUS } from "../constants/index.js";
 
 class ProductsRepository {
-  async findAll(filters = {}) {
-    return Product.find({
-      ...filters,
+  async findAll({ page = 1, limit = 10 } = {}) {
+    const filters = {
       isDeleted: false,
-    }).sort({ createdAt: -1 });
+    };
+
+    const [products, total] = await Promise.all([
+      Product.find(filters)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Product.countDocuments(filters),
+    ]);
+
+    return { products, total };
   }
 
   async findById(id) {
